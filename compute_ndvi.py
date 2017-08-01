@@ -225,6 +225,34 @@ for tile in range(len(dltiles['features'])):
     #sorted_features=sorted(images['features'],key=lambda d:['id'][20:30])
     #sorted_features=sorted(images['features'],key=str.lower(str(g[j for j in range(len(g))])))
     
+    
+    dayOfYear=np.zeros(shape=(k))
+    year=np.zeros(shape=(k))
+    month=np.zeros(shape=(k))
+    day=np.zeros(shape=(k))
+    plotYear=np.zeros(shape=(k))
+    xtime=[]
+    i=-1
+    for feature in images['features']:
+        i+=1
+        # get the scene id
+        scene = feature['id']
+            
+        xtime.append(str(images['features'][i]['id'][20:30]))
+        date=xtime[i]
+        year[i]=xtime[i][0:4]
+        month[i]=xtime[i][5:7]
+        day[i]=xtime[i][8:10]
+        dayOfYear[i]=(float(month[i])-1)*30+float(day[i])
+        plotYear[i]=year[i]+dayOfYear[i]/365.0
+        
+        
+    index=np.argsort(plotYear)    
+        
+        
+        
+        
+        
     ####################
     # Define Variables #
     ####################
@@ -241,12 +269,12 @@ for tile in range(len(dltiles['features'])):
     ndviMed=np.zeros(shape=(k+1))
     xtime=[]
     ####################
-    j=-1
     k=-1
-    for feature in images['features']:
-        j+=1
+    
+    for j in range(len(index)):
         # get the scene id
-        scene = feature['id']
+        scene = images['features'][index[j]]
+        exit()
         ###############################################
         # NDVI
         ###############################################
