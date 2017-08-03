@@ -2,8 +2,6 @@ import os
 import matplotlib.pyplot as plt
 import descarteslabs as dl
 import numpy as np
-import pickle
-import pandas as pd
 import math
 import sys
 from sys import exit
@@ -132,7 +130,7 @@ for tile in range(len(dltiles['features'])):
     n_images = len(images['features'])
     #    print('Number of image matches: %d' % n_images)
     
-    year=np.zeros(shape=(n_images))
+    year=np.zeros(shape=(n_images),dtype='int')
     j=-1
     for feature in images['features']:
         j+=1
@@ -212,25 +210,18 @@ for tile in range(len(dltiles['features'])):
     
     n_images = len(images['features'])
     print('Number of image matches: %d' % n_images)
-    k=n_images
     mo = dl.raster.get_bands_by_constellation("MO").keys()
     my = dl.raster.get_bands_by_constellation("MY").keys()
     avail_bands = set(mo).intersection(my)
     print('Available bands: %s' % ', '.join([a for a in avail_bands]))
     
     band_info = dl.raster.get_bands_by_constellation("MO")
-
-#    k=[j['id'][20:30] for j in images['features']]
-    #timek=[time.mktime(time.strptime(j,"%Y-%m-%d")) for j in k]
-    #sorted_features=sorted(images['features'],key=lambda d:['id'][20:30])
-    #sorted_features=sorted(images['features'],key=str.lower(str(g[j for j in range(len(g))])))
     
-    
-    dayOfYear=np.zeros(shape=(k))
-    year=np.zeros(shape=(k))
-    month=np.zeros(shape=(k))
-    day=np.zeros(shape=(k))
-    plotYear=np.zeros(shape=(k))
+    dayOfYear=np.zeros(shape=(n_images))
+    year=np.zeros(shape=(n_images),dtype=int)
+    month=np.zeros(shape=(n_images),dtype=int)
+    day=np.zeros(shape=(n_images),dtype=int)
+    plotYear=np.zeros(shape=(n_images))
     xtime=[]
     i=-1
     for feature in images['features']:
@@ -247,33 +238,31 @@ for tile in range(len(dltiles['features'])):
         plotYear[i]=year[i]+dayOfYear[i]/365.0
         
         
-    index=np.argsort(plotYear)    
-        
-        
+    indexSorted=np.argsort(plotYear)    
         
         
         
     ####################
     # Define Variables #
     ####################
-    ndviAll=-9999*np.ones(shape=(pixels,pixels,k+1))
-    ndwiAll=-9999*np.ones(shape=(pixels,pixels,k+1))
-#    cloudAll=-9999*np.ones(shape=(pixels,pixels,k+1))  
-    dayOfYear=np.zeros(shape=(k+1))
-    year=np.zeros(shape=(k+1))
-    month=np.zeros(shape=(k+1))
-    day=np.zeros(shape=(k+1))
-    plotYear=np.zeros(shape=(k+1))
-    ndviHist=np.zeros(shape=(40,k+1))
-    ndviAvg=np.zeros(shape=(k+1))
-    ndviMed=np.zeros(shape=(k+1))
+    ndviAll=-9999*np.ones(shape=(pixels,pixels,n_images))
+    ndwiAll=-9999*np.ones(shape=(pixels,pixels,n_images))
+#    cloudAll=-9999*np.ones(shape=(pixels,pixels,n_images))  
+    dayOfYear=np.zeros(shape=(n_images))
+    year=np.zeros(shape=(n_images))
+    month=np.zeros(shape=(n_images))
+    day=np.zeros(shape=(n_images))
+    plotYear=np.zeros(shape=(n_images))
+    ndviHist=np.zeros(shape=(40,n_images))
+    ndviAvg=np.zeros(shape=(n_images))
+    ndviMed=np.zeros(shape=(n_images))
     xtime=[]
     ####################
     k=-1
     
-    for j in range(len(index)):
+    for j in range(len(indexSorted)):
         # get the scene id
-        scene = images['features'][index[j]]
+        scene = images['features'][indexSorted[j]]
         exit()
         ###############################################
         # NDVI
@@ -463,7 +452,6 @@ for tile in range(len(dltiles['features'])):
         ndviAvg[k]=np.average(ndviWithMask)
         ndviMed[k]=np.median(ndviWithMask)
         ############################    
-        exit()
     
     #return ndviAll,cloudAll,ndviHist,ndviAvg,plotYear,k
     
@@ -539,11 +527,11 @@ for tile in range(len(dltiles['features'])):
     np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/ndviHist',ndviHist)
     np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/ndviAvg',ndviAvg)
     np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/ndviAvg',ndviMed)
-    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/k',k)
+    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/n_good_days',k)
     np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/edges',edges)
     np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/arrClas',arrClas)
     
-    k=int(k)
+    n_good_days=int(k)
     ###############################################
     # Claculate Features     
     ############################################### 
@@ -557,126 +545,54 @@ for tile in range(len(dltiles['features'])):
                 if ndviAll[v,h,t]!=0 and ndviAll[v,h,t]>-1:
                     ndviAllMask[v,h,t]=False
     ndviAll=np.ma.masked_array(ndviAll,ndviAllMask)
-    
+     
     ########################
     # Average NDVI Monthly #
     ######################## 
-    ndviMonths=-9999.*np.ones(shape=(nyears,pixels,pixels,12,50))
+    ndviMonths=-9999.*np.ones(shape=(nyears,12,50))
     ndviMedMonths=-9999.*np.ones(shape=(nyears,pixels,pixels,12))
     ndvi90=np.zeros(shape=(nyears,pixels,pixels,12))
     ndvi10=np.zeros(shape=(nyears,pixels,pixels,12))
+    
+    # loop through years #
     for v in range(pixels):
-        for h in range(pixels):
-            y=0
-            d=-1*np.ones(shape=(12))
+        for h in range(pixels):  
+            if oceanMask[v,h]==True:
+                continue
+            d=-1*np.ones(12,dtype=int)
             for t in range(k):
-    #                print int(str(plotYear[t])[5:8])
-                if int(str(plotYear[t])[5:8])<=83:
-                    if np.ma.is_masked(ndviAll[v,h,t])==False:
-                        m=0
-                        d[0]+=1
-                        ndviMonths[y,v,h,m,int(d[0])]=ndviAll[v,h,t]
-                elif int(str(plotYear[t])[5:8])<=167:
-                    if np.ma.is_masked(ndviAll[v,h,t])==False:
-                        m=1
-                        d[1]+=1
-                        ndviMonths[y,v,h,m,int(d[1])]=ndviAll[v,h,t]
-                elif int(str(plotYear[t])[5:8])<=250:
-                    if np.ma.is_masked(ndviAll[v,h,t])==False:
-                        m=2
-                        d[2]+=1
-                        ndviMonths[y,v,h,m,int(d[2])]=ndviAll[v,h,t]
-                elif int(str(plotYear[t])[5:8])<=333:
-                    if np.ma.is_masked(ndviAll[v,h,t])==False:
-                        m=3
-                        d[3]+=1
-                        ndviMonths[y,v,h,m,int(d[3])]=ndviAll[v,h,t]
-                elif int(str(plotYear[t])[5:8])<=417:
-                    if np.ma.is_masked(ndviAll[v,h,t])==False:
-                        m=4
-                        d[4]+=1
-                        ndviMonths[y,v,h,m,int(d[4])]=ndviAll[v,h,t]
-                elif int(str(plotYear[t])[5:8])<=500:
-                    if np.ma.is_masked(ndviAll[v,h,t])==False:
-                        m=5
-                        d[5]+=1
-                        ndviMonths[y,v,h,m,int(d[5])]=ndviAll[v,h,t]
-                elif int(str(plotYear[t])[5:8])<=583:
-                    if np.ma.is_masked(ndviAll[v,h,t])==False:
-                        m=6
-                        d[6]+=1
-                        ndviMonths[y,v,h,m,int(d[6])]=ndviAll[v,h,t]
-                elif int(str(plotYear[t])[5:8])<=667:
-                    if np.ma.is_masked(ndviAll[v,h,t])==False:
-                        m=7
-                        d[7]+=1
-                        ndviMonths[y,v,h,m,int(d[7])]=ndviAll[v,h,t]
-                elif int(str(plotYear[t])[5:8])<=750:
-                    if np.ma.is_masked(ndviAll[v,h,t])==False:
-                        m=8
-                        d[8]+=1
-                        ndviMonths[y,v,h,m,int(d[8])]=ndviAll[v,h,t]
-                elif int(str(plotYear[t])[5:8])<=833:
-                    if np.ma.is_masked(ndviAll[v,h,t])==False:
-                        m=9
-                        d[9]+=1
-                        ndviMonths[y,v,h,m,int(d[9])]=ndviAll[v,h,t]
-                elif int(str(plotYear[t])[5:8])<=917:
-                    if np.ma.is_masked(ndviAll[v,h,t])==False:
-                        m=10
-                        d[10]+=1
-                        ndviMonths[y,v,h,m,int(d[10])]=ndviAll[v,h,t]
-                elif int(str(plotYear[t])[5:8])<=1000:
-                    if np.ma.is_masked(ndviAll[v,h,t])==False:
-                        m=11
-                        d[11]+=1
-                        ndviMonths[y,v,h,m,int(d[11])]=ndviAll[v,h,t]
-    #                print m
-        
-            #mask=ndviMonths==-9999.
-            #masked_ndviMonths=np.ma.masked_array(ndviMonths,mask)
+                if np.ma.is_masked(ndviAll[v,h,t])==False:
+                    m=int(month[t])
+                    y=year[t]-int(start[0:4])
+                    d[m]+=1
+                    ndviMonths[y,m,d[m]]=ndviAll[v,h,t]
         
             for y in range(nyears):
                for m in range(12):
-                 ndviMedMonths[y,v,h,m]=np.median(ndviMonths[y,v,h,m,:int(d[m])])
-                 ndvi90[y,v,h,m]=np.percentile(ndviMonths[y,v,h,m,:int(d[m])],90)
-                 ndvi10[y,v,h,m]=np.percentile(ndviMonths[y,v,h,m,:int(d[m])],10)
+                 ndviMedMonths[y,v,h,m]=np.median(ndviMonths[y,m,:int(d[m])])
+                 ndvi90[y,v,h,m]=np.percentile(ndviMonths[m,:d[m]+1],90)
+                 ndvi10[y,v,h,m]=np.percentile(ndviMonths[m,:d[m]+1],10)
     ###########################
     
     rollingmed_pix=np.zeros(shape=(pixels,pixels,k))
     for v in range(pixels):
         for h in range(pixels):
-            rollingmed_pix[v,h,:]=rolling_median(ndviAll[v,h,:k],10)
+            if oceanMask[v,h]==False:
+                rollingmed_pix[v,h,:]=rolling_median(ndviAll[v,h,:k],10)
     
     rollingmed_pix_mask=np.zeros(shape=(rollingmed_pix.shape),dtype=bool)
     for v in range(pixels):
         for h in range(pixels):
+            if oceanMask[v,h]==True:
+                rollingmed_pix_mask[v,h,:]=True
+                continue
             for t in range(len(rollingmed_pix[0,0,:])):
                 if math.isnan(rollingmed_pix[v,h,t])==True:
                     rollingmed_pix_mask[v,h,t]=True
     
     masked_rollingmed=np.ma.masked_array(rollingmed_pix,rollingmed_pix_mask)
     masked_plotYear=np.ma.masked_array(plotYear[0:k],rollingmed_pix_mask[0,0,:])
-
-    #f=0
-    #y=0       
-    #for l in range(len(masked_plotYear)):
-    #    if str(plotYear[l])[0:4]!=str(plotYear[l-1])[0:4]:
-    #        y+=1
-    #        x=masked_plotYear[f:l]
-    #        ydata=masked_rollingmed[f:l]
-    #        parA[y],parB[y],parC[y]=np.polyfit(x,ydata,2)
-    #        yfit=parA[y]*x**2+parB[y]*x+parC[y]
-    #        plt.clf()
-    #        plt.plot(x,yfit)
-    #        plt.plot(x,masked_rollingmed[f:l])
-    #        plt.savefig(wd+'figures/parabola_'+lonsave+'_'+latsave+'_'+str(plotYear[l])[0:4]+'.pdf')
-    #        f=l
     
-    #ydata2015=[]
-    #x2015=[] 
-    #ydata2016=[]
-    #x2016=[] 
     
     parA=np.zeros(shape=(nyears,pixels,pixels))
     parB=np.zeros(shape=(nyears,pixels,pixels))
@@ -687,89 +603,59 @@ for tile in range(len(dltiles['features'])):
     logm2=np.zeros(shape=(nyears,pixels,pixels))
     logb2=np.zeros(shape=(nyears,pixels,pixels))
 
-    #    ndvi90=np.zeros(shape=(nyears,pixels,pixels))
-    #    ndvi10=np.zeros(shape=(nyears,pixels,pixels))
+
     stdDev=np.zeros(shape=(nyears,pixels,pixels))
     
-    ydata=np.zeros(shape=(nyears,pixels,pixels,k))
-    x=np.zeros(shape=(nyears,k))
+    ydata=np.zeros(shape=(nyears,pixels,pixels,n_good_days))
+    x=np.zeros(shape=(nyears,n_good_days))
+    ydataMask=np.zeros(shape=(nyears,pixels,pixels,n_good_days))
     
-    i=np.zeros(shape=(nyears))
+    i=np.zeros(shape=(nyears),dtype=int)
     for v in range(pixels):
-    #        print v
         for h in range(pixels):
-    #        i[0]=-1
-    #        i[1]=-1
+            if oceanMask[v,h]==True:
+                continue
+            i[:]=-1
             itmp=0
             for t in range(len(masked_rollingmed[0,0,:])):
-    #            if str(plotYear[t])[0:4]=='2015':
-    #                y=2015-int(start[0:4])
-    #                if math.isnan(masked_rollingmed[v,h,t])==False:
-    #                    i[0]+=1
-    #                    itmp=int(i[0])
-    #                    ydata[y,v,h,itmp]=masked_rollingmed[v,h,t]
-    #                    x[y,itmp]=masked_plotYear[t]
-    #            if str(plotYear[t])[0:4]=='2016':
-    #                y=2016-int(start[0:4])
-                    y=0
-                    if math.isnan(masked_rollingmed[v,h,t])==False:
-    #                    i[0]+=1
-                        itmp+=1
-    #                    itmp=int(i[0])
-                        ydata[y,v,h,itmp]=masked_rollingmed[v,h,t]
-                        x[y,itmp]=masked_plotYear[t]
+                if np.is_masked(masked_rollingmed[v,h,t])==False:
+                    y=year[t]-int(start[0:4])
+                    i[y]+=1
+                    ydata[y,v,h,i[y]]=masked_rollingmed[v,h,t]
+                    x[y,i[y]]=masked_plotYear[t]
+                    ydataMask[y,v,h,i[y]]=rollingmed_pix_mask[v,h,t]
     
-    
-    #########################
-    # Put a mask on the data 
-    #########################
     # if one year only
-    ydata[0,:,:,:]=masked_rollingmed[:,:,:]
-    x[0,:]=masked_plotYear[:]
+#    ydata[0,:,:,:]=masked_rollingmed[:,:,:]
+#    x[0,:]=masked_plotYear[:]
+#    
+#    ydataM=np.ma.masked_array(ydata,rollingmed_pix_mask)
+#    xM=np.ma.masked_array(x,rollingmed_pix_mask[0,0,:])
+#    
+#    ydata=np.ma.MaskedArray.filled(ydataM,fill_value=-9999.)
+#    x=np.ma.MaskedArray.filled(xM,fill_value=-9999.)
+#    
+    ydata=np.ma.masked_array(ydata,ydataMask)
+    x=np.ma.masked_array(x,ydataMask[0,0,:])
     
-    ydataM=np.ma.masked_array(ydata,rollingmed_pix_mask)
-    xM=np.ma.masked_array(x,rollingmed_pix_mask[0,0,:])
-    
-    ydata=np.ma.MaskedArray.filled(ydataM,fill_value=-9999.)
-    x=np.ma.MaskedArray.filled(xM,fill_value=-9999.)
-    
-    ydata=np.ma.masked_array(ydata,rollingmed_pix_mask)
-    x=np.ma.masked_array(x,rollingmed_pix_mask[0,0,:])
-    
-    
-    #ydata_mask=np.zeros(shape=(ydata.shape))
-    #for y in range(nyears):  
-    #    for v in range(pixels):
-    #        for h in range(pixels):
-    #            for t in range(365):
-    #                if math.isnan(ydata[y,v,h,t])==True:
-    #                    ydata_mask[y,v,h,t]=True
-    #                if ydata[y,v,h,t]==0:
-    #                    ydata_mask[y,v,h,t]=True
-    
-    #masked_ydata=np.ma.masked_array(ydata,ydata_mask)
-    #masked_x=np.ma.masked_array(x,ydata_mask[:,0,0,:])
-    #########################
     
     for y in range(nyears):
-    #    itmp=int(i[y])
-        itmp=k
+        itmp=int(i[y])
+#        itmp=n_good_days
         for v in range(pixels):
             for h in range(pixels):
-    #                ndvi90[y,v,h]=np.percentile(ydata[y,v,h,:itmp],90)
-    #                ndvi10[y,v,h]=np.amin(ydata[y,v,h,:itmp])
                 stdDev[y,v,h]=np.ma.std(ydata[y,v,h,:itmp])
         
                 parA[y,v,h],parB[y,v,h],parC[y,v,h]=np.polyfit(x[y,:itmp],ydata[y,v,h,:itmp],2)
                 logm1[y,v,h],logb1[y,v,h]=np.polyfit(x[y,:itmp/2], np.ma.log(ydata[y,v,h,:itmp/2]), 1)
                 logm2[y,v,h],logb2[y,v,h]=np.polyfit(x[y,itmp/2:itmp], np.ma.log(ydata[y,v,h,itmp/2:itmp]), 1)
                 
-                if makePlots:
-                    yfit=parA[y,v,h]*x[y,:itmp]**2+parB[y,v,h]*x[y,:itmp]+parC[y,v,h]
-                    plt.clf()
-                    plt.plot(x[y,:itmp],yfit,'.')
-                    plt.plot(x[y,:itmp],ydata[y,v,h,:itmp],'.')
-                    plt.ylim(0,1)
+#                if makePlots:
+#                    yfit=parA[y,v,h]*x[y,:itmp]**2+parB[y,v,h]*x[y,:itmp]+parC[y,v,h]
+#                    plt.clf()
+#                    plt.plot(x[y,:itmp],yfit,'.')
+#                    plt.plot(x[y,:itmp],ydata[y,v,h,:itmp],'.')
+#                    plt.ylim(0,1)
         #            plt.savefig(wd+'figures/parabola_'+lonsave+'_'+latsave+'_2015.pdf')
     
     
@@ -839,43 +725,7 @@ for tile in range(len(dltiles['features'])):
     np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/features',features)
     ########################
 
-    
-
-
-########################
-# Average NDVI Monthly #
-######################## 
-#ndviMonths=-9999.*np.ones(shape=(nyears,10,30))
-#ndviAvgMonthsandYears=-9999.*np.ones(shape=(nyears,10))
-#ndviAvgMonths=-9999.*np.ones(shape=(10))
-#y=0
-#m=0
-#d=0
-#for h in range(k):
-#    d+=1
-#    if h==0:
-#        continue
-#    if str(plotYear[h])[5:6]!=str(plotYear[h-1])[5:6]:
-#        m+=1
-#        d=0
-#    if str(plotYear[h])[0:4]!=str(plotYear[h-1])[0:4]:
-#        y+=1
-#        d=0
-#        m=0
-#    ndviMonths[y,m,d]=ndviAvg[h]
-#
-#mask=ndviMonths==-9999.
-#masked_ndviMonths=np.ma.masked_array(ndviMonths,mask)
-#
-#for y in range(nyears):
-#    for m in range(10):
-#        ndviAvgMonthsandYears[y,m]=np.ma.mean(masked_ndviMonths[y,m,:])
-#        
-#for m in range(10):
-#    ndviAvgMonths[m]=np.average(ndviAvgMonthsandYears[:,m])
-#    
-######################## 
-
+'''
 targetR=np.reshape(target[:tile],tile*nyears*pixels*pixels)
 
 sklearn.preprosessing.StandardScaler
@@ -895,7 +745,7 @@ clf = svm.LinearSVC()
 clf.fit()  
 clf.predict()
 
-
+'''
 #ytst=10**(mtst*xtst+btst)+np.random.rand(180)*10
 #
 #m,b=np.polyfit(xtst, np.log10(ytst), 1)
