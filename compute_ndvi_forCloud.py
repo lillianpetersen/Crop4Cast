@@ -76,7 +76,7 @@ clas=["" for x in range(12)]
 clasLong=["" for x in range(255)]
 clasDict={}
 clasNumDict={}
-f=open(wd+'data/ground_data.txt')                                
+f=open('ground_data.txt')                                
 for line in f:
     tmp=line.split(',')
     clasNumLong=int(tmp[0])
