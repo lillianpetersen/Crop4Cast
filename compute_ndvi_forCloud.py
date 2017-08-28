@@ -9,6 +9,7 @@ import sklearn
 from sklearn import svm
 import time
 from sklearn.preprocessing import StandardScaler
+#from celery import Celery
 
 ####################
 # Function         #
@@ -46,14 +47,12 @@ def rolling_median(var,window):
     
 ####################        
 
+#celery = Celery('compute_ndvi', broker='redis://localhost:6379/0')
+
+#wd='gs://lillian-bucket-storage/'
 wd='/Users/lilllianpetersen/Google Drive/science_fair/'
 
-#lonAll=[-57.864114, -57.345734, -56.0979, -95.156364, -123.6585, -110.580639, 111.233326]
-#latAll= [-13.458213, -12.748814,  -15.6014, 41.185114, 39.3592, 35.772751, 51.158285]
-#lon=lonAll[4]
-#lat=latAll[4]
-#lon=-120.3631
-#lat=38.4083
+
 vlen=992
 hlen=992
 start='2016-01-01'
@@ -65,18 +64,17 @@ padding = 16
 pixels = vlen+2*padding
 res = 120.0
 
-vlen=120
-hlen=120
-padding=4
-pixels=vlen+2*padding
-
-#compute_ndvi(lon,lat,pixels,start,end,country,makePlots)     
+#vlen=120
+#hlen=120
+#padding=4
+#pixels=vlen+2*padding
+    
 
 clas=["" for x in range(12)]
 clasLong=["" for x in range(255)]
 clasDict={}
 clasNumDict={}
-f=open('ground_data.txt')                                
+f=open(wd+'data/ground_data.txt')                                
 for line in f:
     tmp=line.split(',')
     clasNumLong=int(tmp[0])
@@ -92,28 +90,21 @@ for line in f:
 variables: lon, lat, pixels, start, end, country, makePlots
 """
 
-#matches=dl.places.find('united-states_california')
-#aoi = matches[0]
-#shape = dl.places.shape(aoi['slug'], geom='low')
-
 matches=dl.places.find('united-states_washington')
 aoi = matches[0]
 shape = dl.places.shape(aoi['slug'], geom='low')
 
-#dltile = dl.raster.dltile_from_latlon(lat, lon, res, valid_pix, padding)
 dltiles = dl.raster.dltiles_from_shape(res, vlen, padding, shape)
 
 features=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels,6))
 target=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels))
 
-#features=pickle.load(open(wd+'pickle_files/'+country+'/'+str(lon)+'_'+str(lat)+'/features','rd'))
-#target=pickle.load(open(wd+'pickle_files/'+country+'/'+str(lon)+'_'+str(lat)+'/target','rd'))
-exit()
-for tile in range(len(dltiles['features'])):
-    tile=900
-    dltile=dltiles['features'][tile]
+#@celery.task  
+def tile_function(dltile):
     lon=dltile['geometry']['coordinates'][0][0][0]
     lat=dltile['geometry']['coordinates'][0][0][1]
+    globals().update(locals())
+    #### Need to Find and number dl tiles ####
     
     latsave=str(lat)
     latsave=latsave.replace('.','-')
@@ -196,7 +187,7 @@ for tile in range(len(dltiles['features'])):
         
     if np.sum(arrClas)==0:
         print 'No Data: In the Ocean'
-        continue
+        return
     
     oceanMask=np.zeros(shape=(arrClas.shape),dtype=bool)
     for v in range(pixels):
@@ -244,10 +235,10 @@ for tile in range(len(dltiles['features'])):
         plotYear[i]=year[i]+dayOfYear[i]/365.0
         
         
-    indexSorted=np.argsort(plotYear)    
-        
-        
-        
+    indexSorted=np.argsort(plotYear)
+    
+    
+    
     ####################
     # Define Variables #
     ####################
@@ -260,17 +251,17 @@ for tile in range(len(dltiles['features'])):
     month=np.zeros(shape=(n_images))
     day=np.zeros(shape=(n_images))
     plotYear=np.zeros(shape=(n_images))
-    ndviHist=np.zeros(shape=(40,n_images))
-    ndviAvg=np.zeros(shape=(n_images))
-    ndviMed=np.zeros(shape=(n_images))
+#    ndviHist=np.zeros(shape=(40,n_images))
+#    ndviAvg=np.zeros(shape=(n_images))
+#    ndviMed=np.zeros(shape=(n_images))
     xtime=[]
     ####################
     k=-1
     
     for j in range(len(indexSorted)):
+#    for j in range(10):
         # get the scene id
         scene = images['features'][indexSorted[j]]['key']
-        
         ###############################################
         # NDVI
         ###############################################
@@ -340,7 +331,7 @@ for tile in range(len(dltiles['features'])):
         # time
         ############################################### 
         
-        xtime.append(str(images['features'][j]['id'][20:30]))
+        xtime.append(str(images['features'][indexSorted[j]]['id'][20:30]))
         date=xtime[k]
         year[k]=xtime[k][0:4]
         month[k]=xtime[k][5:7]
@@ -445,6 +436,9 @@ for tile in range(len(dltiles['features'])):
                     continue
                 ndwiAll[v,h,k] = (greenM[v,h]-nirM[v,h])/(nirM[v,h]+greenM[v,h]+1e-9)
         #                ndwiAll[v,h,k] = np.clip(128.*(ndwiAll[v,h,k]+1), 0, 255).astype('uint8') shift range from [-1,1] to (0,255)
+        
+        
+        
         '''
         ############################
         # Variables for Histogram  #
@@ -525,232 +519,23 @@ for tile in range(len(dltiles['features'])):
     ########################
     # Save variables       #
     ######################## 
-    if not os.path.exists(r'../saved_vars/'+country+'/'+str(lon)+'_'+str(lat)):
-        os.makedirs(r'../saved_vars/'+country+'/'+str(lon)+'_'+str(lat))
+    if not os.path.exists(r'../saved_vars/'+str(lon)+'_'+str(lat)):
+        os.makedirs(r'../saved_vars/'+str(lon)+'_'+str(lat))
             
-    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/ndviAll',ndviAll) 
-    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/ndwiAll',ndwiAll) 
-    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/Mask',Mask)
-    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/plotYear',plotYear)
-#    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/ndviHist',ndviHist)
-#    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/ndviAvg',ndviAvg)
-#    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/ndviAvg',ndviMed)
-    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/n_good_days',k)
-#    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/edges',edges)
-    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/arrClas',arrClas)
+    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/ndviAll',ndviAll) 
+    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/ndwiAll',ndwiAll) 
+    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/Mask',Mask)
+    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/oceanMask',oceanMask)
+    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/plotYear',plotYear)
+##    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/ndviHist',ndviHist)
+##    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/ndviAvg',ndviAvg)
+##    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/ndviAvg',ndviMed)
+    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/n_good_days',int(k))
+    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/month',month)
+    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/year',year)
+
+##    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/edges',edges)
+    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/arrClas',arrClas)
     
     n_good_days=int(k)
     
-    ###############################################
-    # Claculate Features     
-    ############################################### 
-    
-    ndviAllMask=np.ones(shape=(ndviAll.shape),dtype=bool)
-    for v in range(pixels):
-        for h in range(pixels):
-            if oceanMask[v,h]==1:
-                continue
-            for t in range(n_good_days):
-                if ndviAll[v,h,t]!=0 and ndviAll[v,h,t]>-1:
-                    ndviAllMask[v,h,t]=False
-    ndviAllM=np.ma.masked_array(ndviAll,Mask)
-    ndwiAllM=np.ma.masked_array(ndwiAll,Mask)
-    exit()
-    ########################
-    # Average NDVI Monthly #
-    ######################## 
-    ndviMonths=-9999.*np.ones(shape=(nyears,12,50))
-    ndviMedMonths=-9999.*np.ones(shape=(nyears,pixels,pixels,12))
-    ndvi90=np.zeros(shape=(nyears,pixels,pixels,12))
-    ndvi10=np.zeros(shape=(nyears,pixels,pixels,12))
-    
-    # loop through years #
-    for v in range(pixels):
-        for h in range(pixels):  
-            if oceanMask[v,h]==True:
-                continue
-            d=-1*np.ones(12,dtype=int)
-            for t in range(n_good_days):
-                if np.ma.is_masked(ndviAll[v,h,t])==False:
-                    m=int(month[t])
-                    y=year[t]-int(start[0:4])
-                    d[m]+=1
-                    ndviMonths[y,m,d[m]]=ndviAll[v,h,t]
-        
-            for y in range(nyears):
-               for m in range(12):
-                 ndviMedMonths[y,v,h,m]=np.median(ndviMonths[y,m,:int(d[m])])
-                 ndvi90[y,v,h,m]=np.percentile(ndviMonths[m,:d[m]+1],90)
-                 ndvi10[y,v,h,m]=np.percentile(ndviMonths[m,:d[m]+1],10)
-    ###########################
-    
-    rollingmed_pix=np.zeros(shape=(pixels,pixels,k))
-    for v in range(pixels):
-        for h in range(pixels):
-            if oceanMask[v,h]==False:
-                rollingmed_pix[v,h,:]=rolling_median(ndviAll[v,h,:k],10)
-    
-    rollingmed_pix_mask=np.zeros(shape=(rollingmed_pix.shape),dtype=bool)
-    for v in range(pixels):
-        for h in range(pixels):
-            if oceanMask[v,h]==True:
-                rollingmed_pix_mask[v,h,:]=True
-                continue
-            for t in range(len(rollingmed_pix[0,0,:])):
-                if math.isnan(rollingmed_pix[v,h,t])==True:
-                    rollingmed_pix_mask[v,h,t]=True
-    
-    masked_rollingmed=np.ma.masked_array(rollingmed_pix,rollingmed_pix_mask)
-    masked_plotYear=np.ma.masked_array(plotYear[0:k],rollingmed_pix_mask[0,0,:])
-    
-    
-    parA=np.zeros(shape=(nyears,pixels,pixels))
-    parB=np.zeros(shape=(nyears,pixels,pixels))
-    parC=np.zeros(shape=(nyears,pixels,pixels))
-    
-    logm1=np.zeros(shape=(nyears,pixels,pixels))
-    logb1=np.zeros(shape=(nyears,pixels,pixels))
-    logm2=np.zeros(shape=(nyears,pixels,pixels))
-    logb2=np.zeros(shape=(nyears,pixels,pixels))
-
-
-    stdDev=np.zeros(shape=(nyears,pixels,pixels))
-    
-    ydata=np.zeros(shape=(nyears,pixels,pixels,n_good_days))
-    x=np.zeros(shape=(nyears,n_good_days))
-    ydataMask=np.zeros(shape=(nyears,pixels,pixels,n_good_days))
-    
-    i=np.zeros(shape=(nyears),dtype=int)
-    for v in range(pixels):
-        for h in range(pixels):
-            if oceanMask[v,h]==True:
-                continue
-            i[:]=-1
-            itmp=0
-            for t in range(len(masked_rollingmed[0,0,:])):
-                if np.is_masked(masked_rollingmed[v,h,t])==False:
-                    y=year[t]-int(start[0:4])
-                    i[y]+=1
-                    ydata[y,v,h,i[y]]=masked_rollingmed[v,h,t]
-                    x[y,i[y]]=masked_plotYear[t]
-                    ydataMask[y,v,h,i[y]]=rollingmed_pix_mask[v,h,t]
-    
-    # if one year only
-#    ydata[0,:,:,:]=masked_rollingmed[:,:,:]
-#    x[0,:]=masked_plotYear[:]
-#    
-#    ydataM=np.ma.masked_array(ydata,rollingmed_pix_mask)
-#    xM=np.ma.masked_array(x,rollingmed_pix_mask[0,0,:])
-#    
-#    ydata=np.ma.MaskedArray.filled(ydataM,fill_value=-9999.)
-#    x=np.ma.MaskedArray.filled(xM,fill_value=-9999.)
-#    
-    ydata=np.ma.masked_array(ydata,ydataMask)
-    x=np.ma.masked_array(x,ydataMask[0,0,:])
-    
-    
-    for y in range(nyears):
-        itmp=int(i[y])
-#        itmp=n_good_days
-        for v in range(pixels):
-            for h in range(pixels):
-                stdDev[y,v,h]=np.ma.std(ydata[y,v,h,:itmp])
-        
-                parA[y,v,h],parB[y,v,h],parC[y,v,h]=np.polyfit(x[y,:itmp],ydata[y,v,h,:itmp],2)
-                logm1[y,v,h],logb1[y,v,h]=np.polyfit(x[y,:itmp/2], np.ma.log(ydata[y,v,h,:itmp/2]), 1)
-                logm2[y,v,h],logb2[y,v,h]=np.polyfit(x[y,itmp/2:itmp], np.ma.log(ydata[y,v,h,itmp/2:itmp]), 1)
-                
-#                if makePlots:
-#                    yfit=parA[y,v,h]*x[y,:itmp]**2+parB[y,v,h]*x[y,:itmp]+parC[y,v,h]
-#                    plt.clf()
-#                    plt.plot(x[y,:itmp],yfit,'.')
-#                    plt.plot(x[y,:itmp],ydata[y,v,h,:itmp],'.')
-#                    plt.ylim(0,1)
-        #            plt.savefig(wd+'figures/parabola_'+lonsave+'_'+latsave+'_2015.pdf')
-    
-    
-    stdDevR=np.reshape(stdDev,[nyears,pixels*pixels],order='C')
-    parAr=np.reshape(parA,[nyears,pixels*pixels],order='C')
-    parBr=np.reshape(parB,[nyears,pixels*pixels],order='C')
-    parCr=np.reshape(parC,[nyears,pixels*pixels],order='C')
-    
-    ndvi90R=np.reshape(ndvi90,[nyears,pixels*pixels,12],order='C')
-    ndvi10R=np.reshape(ndvi10,[nyears,pixels*pixels,12],order='C')
-     
-    arrClasR=np.reshape(arrClas,[pixels*pixels],order='C')
-    
-    for y in range(nyears):
-        for p in range(pixels*pixels):
-    #            print s
-            features[tile,y,p,0]=ndvi90R[y,p,0]
-            features[tile,y,p,1]=ndvi90R[y,p,1]
-            features[tile,y,p,2]=ndvi90R[y,p,2]
-            features[tile,y,p,3]=ndvi90R[y,p,3]
-            features[tile,y,p,4]=ndvi90R[y,p,4]
-            features[tile,y,p,5]=ndvi90R[y,p,5]
-            features[tile,y,p,6]=ndvi90R[y,p,6]
-            features[tile,y,p,7]=ndvi90R[y,p,7]
-            features[tile,y,p,8]=ndvi90R[y,p,8]
-            features[tile,y,p,9]=ndvi90R[y,p,9]
-            features[tile,y,p,10]=ndvi90R[y,p,10]
-            features[tile,y,p,11]=ndvi90R[y,p,11]
-            
-            features[tile,y,p,12]=ndvi10R[y,p,0]
-            features[tile,y,p,13]=ndvi10R[y,p,1]
-            features[tile,y,p,14]=ndvi10R[y,p,0]
-            features[tile,y,p,15]=ndvi10R[y,p,3]
-            features[tile,y,p,16]=ndvi10R[y,p,4]
-            features[tile,y,p,17]=ndvi10R[y,p,5]
-            features[tile,y,p,18]=ndvi10R[y,p,6]
-            features[tile,y,p,19]=ndvi10R[y,p,7]
-            features[tile,y,p,20]=ndvi10R[y,p,8]
-            features[tile,y,p,21]=ndvi10R[y,p,9]
-            features[tile,y,p,22]=ndvi10R[y,p,10]
-            features[tile,y,p,23]=ndvi10R[y,p,11]
-            
-            features[tile,y,p,24]=stdDevR[y,p]
-            features[tile,y,p,25]=parAr[y,p]
-            features[tile,y,p,26]=parBr[y,p]
-            features[tile,y,p,27]=parCr[y,p]
-        
-            target[tile,y,p]=arrClasR[p]
-            
-                
-    
-                
-    ########################
-    # Save variables       #
-    ######################## 
-    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/target',target)
-    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/features',features)
-    ########################
-
-'''
-targetR=np.reshape(target[:tile],tile*nyears*pixels*pixels)
-
-sklearn.preprosessing.StandardScaler
-
-for n in range(len(targetR)):
-    if targetR[n]==1 or targetR[n]==2:
-        targetR[n]=1
-    elif targetR[n]==3 or targetR[n]==4:
-        targetR[n]=2
-    else:
-        targetR[n]=targetR[n]-2
-        
-X=StandardScaler().fit_transform(featuresR)        
-
-
-clf = svm.LinearSVC()
-clf.fit()  
-clf.predict()
-
-'''
-#ytst=10**(mtst*xtst+btst)+np.random.rand(180)*10
-#
-#m,b=np.polyfit(xtst, np.log10(ytst), 1)
-#
-#yfit=10**(m*xtst+b)
-#
-#plt.plot(xtst,ytst)
-#plt.plot(xtst,yfit)
