@@ -56,6 +56,7 @@ wd='/Users/lilllianpetersen/Google Drive/science_fair/'
 vlen=992
 hlen=992
 start='2016-01-01'
+startyear=2016
 end='2016-12-31'
 nyears=1
 country='US'
@@ -63,12 +64,6 @@ makePlots=False
 padding = 16
 pixels = vlen+2*padding
 res = 120.0
-
-#vlen=120
-#hlen=120
-#padding=4
-#pixels=vlen+2*padding
-    
 
 clas=["" for x in range(12)]
 clasLong=["" for x in range(255)]
@@ -96,11 +91,17 @@ shape = dl.places.shape(aoi['slug'], geom='low')
 
 dltiles = dl.raster.dltiles_from_shape(res, vlen, padding, shape)
 
+lonlist=np.zeros(shape=(len(dltiles['features'])))
+latlist=np.zeros(shape=(len(dltiles['features'])))
+for i in range(len(dltiles['features'])):
+    lonlist[i]=dltiles['features'][i]['geometry']['coordinates'][0][0][0]
+    latlist[i]=dltiles['features'][i]['geometry']['coordinates'][0][0][1]
+
 features=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels,6))
 target=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels))
 
 #@celery.task  
-def tile_function(dltile):
+def feature_array(dltile):
     lon=dltile['geometry']['coordinates'][0][0][0]
     lat=dltile['geometry']['coordinates'][0][0][1]
 
@@ -144,11 +145,14 @@ def tile_function(dltile):
     ndviMedMonths=-9999.*np.ones(shape=(nyears,pixels,pixels,12))
     ndvi90=np.zeros(shape=(nyears,pixels,pixels,12))
     ndvi10=np.zeros(shape=(nyears,pixels,pixels,12))
+    ndwiYears=-9999.*np.ones(shape=(nyears,400))
+    ndwi10=np.zeros(shape=(nyears,pixels,pixels))
+    ndwi90=np.zeros(shape=(nyears,pixels,pixels))
     
-    ndwiMonths=-9999.*np.ones(shape=(nyears,12,50))
-    ndwiMedMonths=-9999.*np.ones(shape=(nyears,pixels,pixels,12))
-    ndwi90=np.zeros(shape=(nyears,pixels,pixels,12))
-    ndwi10=np.zeros(shape=(nyears,pixels,pixels,12))
+#    ndwiMonths=-9999.*np.ones(shape=(nyears,12,50))
+#    ndwiMedMonths=-9999.*np.ones(shape=(nyears,pixels,pixels,12))
+#    ndwi90=np.zeros(shape=(nyears,pixels,pixels,12))
+#    ndwi10=np.zeros(shape=(nyears,pixels,pixels,12))
     
     # loop through years #
     for v in range(pixels):
@@ -156,33 +160,37 @@ def tile_function(dltile):
             if oceanMask[v,h]==True:
                 continue
             d=-1*np.ones(12,dtype=int)
+            i=-1*np.ones(nyears,dtype=int)
             for t in range(n_good_days):
                 if np.ma.is_masked(ndviAll[v,h,t])==False:
                     m=int(month[t])
                     y=int(year[t]-int(start[0:4]))
                     d[m-1]+=1
                     ndviMonths[y,m-1,d[m-1]]=ndviAll[v,h,t]
-                    ndwiMonths[y,m-1,d[m-1]]=ndwiAll[v,h,t]
+                    ndwiYears[y,i[y-int(start[0:4])]]=ndwiAll[v,h,t]
+#                    ndwiMonths[y,m-1,d[m-1]]=ndwiAll[v,h,t]
             
             for y in range(nyears):
                for m in range(12):
                    if d[m]>-1:
                      ndviMedMonths[y,v,h,m]=np.median(ndviMonths[y,m,:d[m]+1])
-                     ndwiMedMonths[y,v,h,m]=np.median(ndwiMonths[y,m,:d[m]+1])
-                     globals().update(locals())
+#                     ndwiMedMonths[y,v,h,m]=np.median(ndwiMonths[y,m,:d[m]+1])
                      ndvi90[y,v,h,m]=np.percentile(ndviMonths[y,m,:d[m]+1],90)
                      ndvi10[y,v,h,m]=np.percentile(ndviMonths[y,m,:d[m]+1],10)
-                     ndwi90[y,v,h,m]=np.percentile(ndwiMonths[y,m,:d[m]+1],90)
-                     ndwi10[y,v,h,m]=np.percentile(ndwiMonths[y,m,:d[m]+1],10)
+#                     ndwi90[y,v,h,m]=np.percentile(ndwiMonths[y,m,:d[m]+1],90)
+#                     ndwi10[y,v,h,m]=np.percentile(ndwiMonths[y,m,:d[m]+1],10)
+                     ndwi90[y,v,h]=np.percentile(ndwiYears[y,:i[y-int(start[0:4])]+1],90)
+                     ndwi10[y,v,h]=np.percentile(ndwiYears[y,:i[y-int(start[0:4])]+1],10)
+                     globals().update(locals())
     ###########################
     
     rollingmed_pix=np.zeros(shape=(pixels,pixels,k))
-#    rollingmed_pix_ndwi=np.zeros(shape=(pixels,pixels,k))
+    #    rollingmed_pix_ndwi=np.zeros(shape=(pixels,pixels,k))
     for v in range(pixels):
         for h in range(pixels):
             if oceanMask[v,h]==False:
                 rollingmed_pix[v,h,:]=rolling_median(ndviAll[v,h,:k],10)
-#                rollingmed_pix_ndwi[v,h,:]=rolling_median(ndwiAll[v,h,:k],10)
+    #                rollingmed_pix_ndwi[v,h,:]=rolling_median(ndwiAll[v,h,:k],10)
     
     rollingmed_pix_mask=np.zeros(shape=(rollingmed_pix.shape),dtype=bool)
     for v in range(pixels):
@@ -193,11 +201,10 @@ def tile_function(dltile):
             for t in range(len(rollingmed_pix[0,0,:])):
                 if math.isnan(rollingmed_pix[v,h,t])==True:
                     rollingmed_pix_mask[v,h,t]=True
-    
+
     masked_rollingmed_ndvi=np.ma.masked_array(rollingmed_pix,rollingmed_pix_mask)
 #    masked_rollingmed_ndwi=np.ma.masked_array(rollingmed_pix_ndwi,rollingmed_pix_mask)
     masked_plotYear=np.ma.masked_array(plotYear[0:k],rollingmed_pix_mask[0,0,:])
-    
     
     parA=np.zeros(shape=(nyears,pixels,pixels))
     parB=np.zeros(shape=(nyears,pixels,pixels))
@@ -208,13 +215,13 @@ def tile_function(dltile):
     logm2=np.zeros(shape=(nyears,pixels,pixels))
     logb2=np.zeros(shape=(nyears,pixels,pixels))
 
-
+    
     stdDev=np.zeros(shape=(nyears,pixels,pixels))
     
     ydata=np.zeros(shape=(nyears,pixels,pixels,n_good_days))
     x=np.zeros(shape=(nyears,n_good_days))
     ydataMask=np.zeros(shape=(nyears,pixels,pixels,n_good_days))
-    
+    globals().update(locals())
     i=np.zeros(shape=(nyears),dtype=int)
     for v in range(pixels):
         for h in range(pixels):
@@ -223,13 +230,13 @@ def tile_function(dltile):
             i[:]=-1
             itmp=0
             for t in range(len(masked_rollingmed_ndvi[0,0,:])):
-                if np.is_masked(masked_rollingmed_ndvi[v,h,t])==False:
+                if np.ma.is_masked(masked_rollingmed_ndvi[v,h,t])==False:
                     y=year[t]-int(start[0:4])
                     i[y]+=1
                     ydata[y,v,h,i[y]]=masked_rollingmed_ndvi[v,h,t]
                     x[y,i[y]]=masked_plotYear[t]
                     ydataMask[y,v,h,i[y]]=rollingmed_pix_mask[v,h,t]
-    
+    globals().update(locals())
     ydata=np.ma.masked_array(ydata,ydataMask)
     x=np.ma.masked_array(x,ydataMask[0,0,:])
     
@@ -260,6 +267,9 @@ def tile_function(dltile):
     
     ndvi90R=np.reshape(ndvi90,[nyears,pixels*pixels,12],order='C')
     ndvi10R=np.reshape(ndvi10,[nyears,pixels*pixels,12],order='C')
+    
+    ndwi90R=np.reshape(ndwi90,[nyears,pixels*pixels],order='C')
+    ndwi10R=np.reshape(ndwi10,[nyears,pixels*pixels],order='C')
      
     arrClasR=np.reshape(arrClas,[pixels*pixels],order='C')
     
@@ -281,7 +291,7 @@ def tile_function(dltile):
             
             features[tile,y,p,12]=ndvi10R[y,p,0]
             features[tile,y,p,13]=ndvi10R[y,p,1]
-            features[tile,y,p,14]=ndvi10R[y,p,0]
+            features[tile,y,p,14]=ndvi10R[y,p,2]
             features[tile,y,p,15]=ndvi10R[y,p,3]
             features[tile,y,p,16]=ndvi10R[y,p,4]
             features[tile,y,p,17]=ndvi10R[y,p,5]
@@ -292,10 +302,13 @@ def tile_function(dltile):
             features[tile,y,p,22]=ndvi10R[y,p,10]
             features[tile,y,p,23]=ndvi10R[y,p,11]
             
-            features[tile,y,p,24]=stdDevR[y,p]
-            features[tile,y,p,25]=parAr[y,p]
-            features[tile,y,p,26]=parBr[y,p]
-            features[tile,y,p,27]=parCr[y,p]
+            features[tile,y,p,24]=ndwi90R[y,p]
+            features[tile,y,p,25]=ndwi10R[y,p]
+            
+            features[tile,y,p,26]=stdDevR[y,p]
+            features[tile,y,p,27]=parAr[y,p]
+            features[tile,y,p,28]=parBr[y,p]
+            features[tile,y,p,29]=parCr[y,p]
         
             target[tile,y,p]=arrClasR[p]
             
@@ -315,9 +328,13 @@ def tile_function(dltile):
 for tile in range(1):
     tile=4
     dltile=dltiles['features'][tile]
-    tile_function(dltile)
+    feature_array(dltile)
 
-
+for i in range(len(dltiles['features'])):
+    if not os.path.exists(r'../saved_vars/'+str(lonlist[i])+'_'+str(latlist[i])+'/features'):
+        dltile=dltiles['features'][i]
+        feature_array(dltile)
+    
 
 
 
