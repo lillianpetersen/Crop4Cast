@@ -96,6 +96,12 @@ shape = dl.places.shape(aoi['slug'], geom='low')
 
 dltiles = dl.raster.dltiles_from_shape(res, vlen, padding, shape)
 
+lonlist=np.zeros(shape=(len(dltiles['features'])))
+latlist=np.zeros(shape=(len(dltiles['features'])))
+for i in range(len(dltiles['features'])):
+    lonlist[i]=dltiles['features'][i]['geometry']['coordinates'][0][0][0]
+    latlist[i]=dltiles['features'][i]['geometry']['coordinates'][0][0][1]
+
 features=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels,6))
 target=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels))
 
@@ -521,8 +527,7 @@ def tile_function(dltile):
     ######################## 
     if not os.path.exists(r'../saved_vars/'+str(lon)+'_'+str(lat)):
         os.makedirs(r'../saved_vars/'+str(lon)+'_'+str(lat))
-            
-    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/ndviAll',ndviAll) 
+             
     np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/ndwiAll',ndwiAll) 
     np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/Mask',Mask)
     np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/oceanMask',oceanMask)
@@ -533,9 +538,36 @@ def tile_function(dltile):
     np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/n_good_days',int(k))
     np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/month',month)
     np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/year',year)
-
 ##    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/edges',edges)
     np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/arrClas',arrClas)
+    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/ndviAll',ndviAll)
     
     n_good_days=int(k)
     
+    
+for tile in range(1):
+    tile=4
+    dltile=dltiles['features'][tile]
+    tile_function(dltile)   
+    
+    
+for i in range(len(dltiles['features'])):
+    if not os.path.exists(r'../saved_vars/'+str(lonlist[i])+'_'+str(latlist[i])+'/ndviAll'):
+        dltile=dltiles['features'][i]
+        tile_function(dltile)
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
