@@ -97,7 +97,7 @@ for i in range(len(dltiles['features'])):
     lonlist[i]=dltiles['features'][i]['geometry']['coordinates'][0][0][0]
     latlist[i]=dltiles['features'][i]['geometry']['coordinates'][0][0][1]
 
-features=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels,6))
+features=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels,30))
 target=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels))
 
 #@celery.task  
@@ -203,7 +203,7 @@ def feature_array(dltile):
                     rollingmed_pix_mask[v,h,t]=True
 
     masked_rollingmed_ndvi=np.ma.masked_array(rollingmed_pix,rollingmed_pix_mask)
-#    masked_rollingmed_ndwi=np.ma.masked_array(rollingmed_pix_ndwi,rollingmed_pix_mask)
+    #    masked_rollingmed_ndwi=np.ma.masked_array(rollingmed_pix_ndwi,rollingmed_pix_mask)
     masked_plotYear=np.ma.masked_array(plotYear[0:k],rollingmed_pix_mask[0,0,:])
     
     parA=np.zeros(shape=(nyears,pixels,pixels))
@@ -214,7 +214,7 @@ def feature_array(dltile):
     logb1=np.zeros(shape=(nyears,pixels,pixels))
     logm2=np.zeros(shape=(nyears,pixels,pixels))
     logb2=np.zeros(shape=(nyears,pixels,pixels))
-
+    
     
     stdDev=np.zeros(shape=(nyears,pixels,pixels))
     
@@ -223,6 +223,7 @@ def feature_array(dltile):
     ydataMask=np.zeros(shape=(nyears,pixels,pixels,n_good_days))
     globals().update(locals())
     i=np.zeros(shape=(nyears),dtype=int)
+    # break data up into years
     for v in range(pixels):
         for h in range(pixels):
             if oceanMask[v,h]==True:
@@ -231,26 +232,27 @@ def feature_array(dltile):
             itmp=0
             for t in range(len(masked_rollingmed_ndvi[0,0,:])):
                 if np.ma.is_masked(masked_rollingmed_ndvi[v,h,t])==False:
-                    y=year[t]-int(start[0:4])
+                    y=int(year[t]-int(start[0:4]))
                     i[y]+=1
                     ydata[y,v,h,i[y]]=masked_rollingmed_ndvi[v,h,t]
                     x[y,i[y]]=masked_plotYear[t]
                     ydataMask[y,v,h,i[y]]=rollingmed_pix_mask[v,h,t]
     globals().update(locals())
     ydata=np.ma.masked_array(ydata,ydataMask)
-    x=np.ma.masked_array(x,ydataMask[0,0,:])
-    
+    for y in range(nyears):
+        x[y]=np.ma.masked_array(x[y],ydataMask[y,0,0,:])
+
     for y in range(nyears):
         itmp=int(i[y])
-#        itmp=n_good_days
         for v in range(pixels):
             for h in range(pixels):
                 stdDev[y,v,h]=np.ma.std(ydata[y,v,h,:itmp])
         
                 parA[y,v,h],parB[y,v,h],parC[y,v,h]=np.polyfit(x[y,:itmp],ydata[y,v,h,:itmp],2)
-                logm1[y,v,h],logb1[y,v,h]=np.polyfit(x[y,:itmp/2], np.ma.log(ydata[y,v,h,:itmp/2]), 1)
-                logm2[y,v,h],logb2[y,v,h]=np.polyfit(x[y,itmp/2:itmp], np.ma.log(ydata[y,v,h,itmp/2:itmp]), 1)
-                
+
+#                logm1[y,v,h],logb1[y,v,h]=np.polyfit(x[y,:itmp/2], np.ma.log(ydata[y,v,h,:itmp/2]), 1)
+#                logm2[y,v,h],logb2[y,v,h]=np.polyfit(x[y,itmp/2:itmp], np.ma.log(ydata[y,v,h,itmp/2:itmp]), 1)
+#                
 #                if makePlots:
 #                    yfit=parA[y,v,h]*x[y,:itmp]**2+parB[y,v,h]*x[y,:itmp]+parC[y,v,h]
 #                    plt.clf()
@@ -272,7 +274,7 @@ def feature_array(dltile):
     ndwi10R=np.reshape(ndwi10,[nyears,pixels*pixels],order='C')
      
     arrClasR=np.reshape(arrClas,[pixels*pixels],order='C')
-    
+
     for y in range(nyears):
         for p in range(pixels*pixels):
     #            print s
@@ -302,8 +304,8 @@ def feature_array(dltile):
             features[tile,y,p,22]=ndvi10R[y,p,10]
             features[tile,y,p,23]=ndvi10R[y,p,11]
             
-            features[tile,y,p,24]=ndwi90R[y,p]
-            features[tile,y,p,25]=ndwi10R[y,p]
+#            features[tile,y,p,24]=ndwi90R[y,p]
+#            features[tile,y,p,25]=ndwi10R[y,p]
             
             features[tile,y,p,26]=stdDevR[y,p]
             features[tile,y,p,27]=parAr[y,p]
