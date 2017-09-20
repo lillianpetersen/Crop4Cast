@@ -55,15 +55,20 @@ wd='/Users/lilllianpetersen/Google Drive/science_fair/'
 
 vlen=992
 hlen=992
-start='2016-01-01'
-startyear=2016
+start='2015-01-01'
 end='2016-12-31'
-nyears=1
+nyears=2
 country='US'
 makePlots=False
 padding = 16
 pixels = vlen+2*padding
 res = 120.0
+
+vlen=100
+hlen=100
+padding=0
+pixels=vlen+2*padding
+    
 
 clas=["" for x in range(12)]
 clasLong=["" for x in range(255)]
@@ -85,7 +90,8 @@ for line in f:
 variables: lon, lat, pixels, start, end, country, makePlots
 """
 
-matches=dl.places.find('united-states_washington')
+#matches=dl.places.find('united-states_washington')
+matches=dl.places.find('united-states_iowa')
 aoi = matches[0]
 shape = dl.places.shape(aoi['slug'], geom='low')
 
@@ -104,7 +110,10 @@ target=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels))
 def feature_array(dltile):
     lon=dltile['geometry']['coordinates'][0][0][0]
     lat=dltile['geometry']['coordinates'][0][0][1]
-
+    globals().update(locals())
+    print lon
+    print lat
+    
     latsave=str(lat)
     latsave=latsave.replace('.','-')
     lonsave=str(lat)
@@ -113,75 +122,82 @@ def feature_array(dltile):
     print '\n\n'
     print 'dltile: '+str(tile)+' of '+str(len(dltiles['features']))
     
-    Mask=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/Mask.npy')
-    oceanMask=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/oceanMask.npy')
-    ndviAll=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/ndviAll.npy')
-    ndwiAll=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/ndwiAll.npy')
-    month=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/month.npy')
-    year=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/year.npy')
-    plotYear=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/plotYear.npy')
-    n_good_days=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/n_good_days.npy')
-    arrClas=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/arrClas.npy')
+    Mask=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/Mask_2.npy')
+    oceanMask=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/oceanMask_2.npy')
+    ndviAll=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/ndviAll_2.npy')
+    ndwiAll=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/ndwiAll_2.npy')
+    month=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/month_2.npy')
+    year=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/year_2.npy')
+    plotYear=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/plotYear_2.npy')
+    n_good_days=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/n_good_days_2.npy')
+    arrClas=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/arrClas_2.npy')
     k=n_good_days
+    globals().update(locals())
     ###############################################
     # Claculate Features     
     ############################################### 
     
-    ndviAllMask=np.ones(shape=(ndviAll.shape),dtype=bool)
-    for v in range(pixels):
-        for h in range(pixels):
-            if oceanMask[v,h]==1:
-                continue
-            for t in range(n_good_days):
-                if ndviAll[v,h,t]!=0 and ndviAll[v,h,t]>-1:
-                    ndviAllMask[v,h,t]=False
+#    ndviAllMask=np.ones(shape=(ndviAll.shape),dtype=bool)
+#    for v in range(pixels):
+#        for h in range(pixels):
+#    #            if oceanMask[v,h]==1:
+#    #                continue
+#            for t in range(n_good_days):
+#                if ndviAll[v,h,t]!=0 and ndviAll[v,h,t]>-1:
+#                    ndviAllMask[v,h,t]=False
     ndviAll=np.ma.masked_array(ndviAll,Mask)
     ndwiAll=np.ma.masked_array(ndwiAll,Mask)
+    
     globals().update(locals())
     ########################
     # Average NDVI Monthly #
     ######################## 
     ndviMonths=-9999.*np.ones(shape=(nyears,12,50))
+    ndviMonthsMask=np.zeros(shape=(nyears,12,50))
     ndviMedMonths=-9999.*np.ones(shape=(nyears,pixels,pixels,12))
     ndvi90=np.zeros(shape=(nyears,pixels,pixels,12))
     ndvi10=np.zeros(shape=(nyears,pixels,pixels,12))
     ndwiYears=-9999.*np.ones(shape=(nyears,400))
+    ndwiYearsMask=-9999.*np.ones(shape=(nyears,400))
     ndwi10=np.zeros(shape=(nyears,pixels,pixels))
     ndwi90=np.zeros(shape=(nyears,pixels,pixels))
     
-#    ndwiMonths=-9999.*np.ones(shape=(nyears,12,50))
-#    ndwiMedMonths=-9999.*np.ones(shape=(nyears,pixels,pixels,12))
-#    ndwi90=np.zeros(shape=(nyears,pixels,pixels,12))
-#    ndwi10=np.zeros(shape=(nyears,pixels,pixels,12))
+    #    ndwiMonths=-9999.*np.ones(shape=(nyears,12,50))
+    #    ndwiMedMonths=-9999.*np.ones(shape=(nyears,pixels,pixels,12))
+    #    ndwi90=np.zeros(shape=(nyears,pixels,pixels,12))
+    #    ndwi10=np.zeros(shape=(nyears,pixels,pixels,12))
     
-    # loop through years #
     for v in range(pixels):
         for h in range(pixels):  
             if oceanMask[v,h]==True:
                 continue
-            d=-1*np.ones(12,dtype=int)
+            d=-1*np.ones(shape=(nyears,12),dtype=int)
             i=-1*np.ones(nyears,dtype=int)
             for t in range(n_good_days):
                 if np.ma.is_masked(ndviAll[v,h,t])==False:
                     m=int(month[t])
                     y=int(year[t]-int(start[0:4]))
-                    d[m-1]+=1
-                    ndviMonths[y,m-1,d[m-1]]=ndviAll[v,h,t]
-                    ndwiYears[y,i[y-int(start[0:4])]]=ndwiAll[v,h,t]
-#                    ndwiMonths[y,m-1,d[m-1]]=ndwiAll[v,h,t]
+                    d[y,m-1]+=1
+                    i[y]+=1
+                    ndviMonths[y,m-1,d[y,m-1]]=ndviAll[v,h,t]
+                    ndviMonthsMask[y,m-1,d[y,m-1]]=Mask[v,h,t]
+                    ndwiYears[y,i[y]]=ndwiAll[v,h,t]
+                    ndwiYearsMask[y,i[y]]=Mask[v,h,t]
+    #                    ndwiMonths[y,m-1,d[y,m-1]]=ndwiAll[v,h,t]
             
             for y in range(nyears):
                for m in range(12):
-                   if d[m]>-1:
-                     ndviMedMonths[y,v,h,m]=np.median(ndviMonths[y,m,:d[m]+1])
-#                     ndwiMedMonths[y,v,h,m]=np.median(ndwiMonths[y,m,:d[m]+1])
-                     ndvi90[y,v,h,m]=np.percentile(ndviMonths[y,m,:d[m]+1],90)
-                     ndvi10[y,v,h,m]=np.percentile(ndviMonths[y,m,:d[m]+1],10)
-#                     ndwi90[y,v,h,m]=np.percentile(ndwiMonths[y,m,:d[m]+1],90)
-#                     ndwi10[y,v,h,m]=np.percentile(ndwiMonths[y,m,:d[m]+1],10)
-                     ndwi90[y,v,h]=np.percentile(ndwiYears[y,:i[y-int(start[0:4])]+1],90)
-                     ndwi10[y,v,h]=np.percentile(ndwiYears[y,:i[y-int(start[0:4])]+1],10)
-                     globals().update(locals())
+                   if d[y,m-1]>-1:
+                     ndviMedMonths[y,v,h,m]=np.ma.median(np.ma.masked_array(ndviMonths[y,m,:d[y,m-1]+1],ndviMonthsMask[y,m,:d[y,m-1]+1]))
+    #                     ndwiMedMonths[y,v,h,m]=np.median(ndwiMonths[y,m,:d[y,m-1]+1])
+                     ndvi90[y,v,h,m]=np.percentile(  np.ma.masked_array(ndviMonths[y,m,:d[y,m-1]+1],ndviMonthsMask[y,m,:d[y,m-1]+1]).compressed()  ,90)
+                     ndvi10[y,v,h,m]=np.percentile(  np.ma.masked_array(ndviMonths[y,m,:d[y,m-1]+1],ndviMonthsMask[y,m,:d[y,m-1]+1]).compressed()  ,10)
+    #                     ndwi90[y,v,h,m]=np.percentile(ndwiMonths[y,m,:d[y,m-1]+1],90)
+    #                     ndwi10[y,v,h,m]=np.percentile(ndwiMonths[y,m,:d[y,m-1]+1],10)
+               ndwi90[y,v,h]=np.percentile(   np.ma.masked_array(ndwiYears[y,:i[y]+1],ndwiYearsMask[y,:i[y]+1]).compressed()  ,90)
+               ndwi10[y,v,h]=np.percentile(   np.ma.masked_array(ndwiYears[y,:i[y]+1],ndwiYearsMask[y,:i[y]+1]).compressed()  ,10)
+               globals().update(locals())
+    exit()
     ###########################
     
     rollingmed_pix=np.zeros(shape=(pixels,pixels,k))

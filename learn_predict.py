@@ -63,13 +63,13 @@ targetR=target.reshape(1*1048576)
 #X=featuresR[:1000000]
 #Y=targetR[:1000000]
 
-classes=-9999*np.zeros(shape=(10,len(featuresR),30))
-avg_classes=np.zeros(shape=(10,30))
-px=-1*np.ones(shape=(10),dtype=int)
+classes=-9999*np.ones(shape=(10,len(featuresR),30))
+avg_classes=-9999*np.ones(shape=(10,30))
+pix=-1*np.ones(shape=(10),dtype=int)
 for i in range(len(featuresR)):
     cls=int(targetR[i])
-    px[cls]+=1
-    classes[cls,px,:]=featuresR[i,:]
+    pix[cls]+=1
+    classes[cls,pix[cls],:]=featuresR[i,:]
 
 pxNum=177
 learn_data=np.zeros(shape=(pxNum*9+1,30))
@@ -84,8 +84,9 @@ for cls in range(9):
         X[i,:]=classes[cls,px,:]
         y[i]=cls
 i=-1
+pxcls=np.zeros(shape=(9))
 for cls in range(9):
-    for px in range(100):
+    for px in range(pxNum):
         i+=1
         learn_data[i,:]=classes[cls,px+pxNum,:]
         y_true[i]=cls
@@ -145,21 +146,34 @@ plt.show()
 
 for cls in range(10):
     for ftr in range(30):
-        avg_classes[cls,ftr]=np.mean(classes[cls,:px[cls],ftr])
-exit()
-fHist=np.zeros(shape=(40,np.amax(px)))
-for cls in range(10):
-    cls=5
-    for i in range(np.amax(px)):
-        hist,edges=np.histogram(classes[cls,i,:24],bins=np.arange(-1.,1.01,.05))
-        fHist[:,i]=hist[:px[cls]]
-    plt.clf()
-    plt.figure(1)
-    plt.contourf(np.arange(px[cls]),edges[:40],fHist,100,cmap=plt.cm.gist_stern_r,levels=np.arange(0,5000,10))    
-    plt.colorbar()
-    exit()
+        avg_classes[cls,ftr]=np.mean(classes[cls,:pix[cls],ftr])
+
+#fHist=np.zeros(shape=(40,np.amax(px)))
+#for cls in range(10):
+#    cls=5
+#    for i in range(np.amax(px)):
+#        hist,edges=np.histogram(classes[cls,i,:24],bins=np.arange(-1.,1.01,.05))
+#        fHist[:,i]=hist[:pix[cls]]
+#    plt.clf()
+#    plt.figure(1)
+#    plt.contourf(np.arange(pix[cls]),edges[:40],fHist,100,cmap=plt.cm.gist_stern_r,levels=np.arange(0,5000,10))    
+#    plt.colorbar()
+ 
+    
 
 
+plt.plot(avg_classes[5,12:24],'--b',label=clas[5])
+plt.plot(avg_classes[5,:12],'--b')
+plt.plot(avg_classes[7,:12],'--g',label=clas[7])
+plt.plot(avg_classes[7,12:24],'--g')
+plt.plot(avg_classes[6,:12],'--r',label=clas[6])
+plt.plot(avg_classes[6,12:24],'--r')
+plt.plot(avg_classes[1,:12],'--y',label=clas[1])
+plt.plot(avg_classes[1,12:24],'--y')
+plt.plot(avg_classes[4,:12],'--m',label=clas[4])
+plt.plot(avg_classes[4,12:24],'--m')
+plt.axis([0,12,0,1])
+plt.legend()
 
 
 
