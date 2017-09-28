@@ -114,6 +114,7 @@ def feature_array(dltile):
     print lon
     print lat
     
+    
     latsave=str(lat)
     latsave=latsave.replace('.','-')
     lonsave=str(lat)
@@ -153,12 +154,12 @@ def feature_array(dltile):
     # Average NDVI Monthly #
     ######################## 
     ndviMonths=-9999.*np.ones(shape=(nyears,12,50))
-    ndviMonthsMask=np.zeros(shape=(nyears,12,50))
+    ndviMonthsMask=np.zeros(shape=(nyears,12,50),dtype=bool)
     ndviMedMonths=-9999.*np.ones(shape=(nyears,pixels,pixels,12))
     ndvi90=np.zeros(shape=(nyears,pixels,pixels,12))
     ndvi10=np.zeros(shape=(nyears,pixels,pixels,12))
     ndwiYears=-9999.*np.ones(shape=(nyears,400))
-    ndwiYearsMask=-9999.*np.ones(shape=(nyears,400))
+    ndwiYearsMask=-9999.*np.ones(shape=(nyears,400),dtype=bool)
     ndwi10=np.zeros(shape=(nyears,pixels,pixels))
     ndwi90=np.zeros(shape=(nyears,pixels,pixels))
     
@@ -174,30 +175,29 @@ def feature_array(dltile):
             d=-1*np.ones(shape=(nyears,12),dtype=int)
             i=-1*np.ones(nyears,dtype=int)
             for t in range(n_good_days):
-                if np.ma.is_masked(ndviAll[v,h,t])==False:
-                    m=int(month[t])
-                    y=int(year[t]-int(start[0:4]))
-                    d[y,m-1]+=1
-                    i[y]+=1
-                    ndviMonths[y,m-1,d[y,m-1]]=ndviAll[v,h,t]
-                    ndviMonthsMask[y,m-1,d[y,m-1]]=Mask[v,h,t]
-                    ndwiYears[y,i[y]]=ndwiAll[v,h,t]
-                    ndwiYearsMask[y,i[y]]=Mask[v,h,t]
-    #                    ndwiMonths[y,m-1,d[y,m-1]]=ndwiAll[v,h,t]
+                m=int(month[t])-1
+                y=int(year[t]-int(start[0:4]))
+                d[y,m]+=1
+                i[y]+=1
+                ndviMonths[y,m,d[y,m]]=ndviAll[v,h,t]
+                ndviMonthsMask[y,m,d[y,m]]=Mask[v,h,t]
+                ndwiYears[y,i[y]]=ndwiAll[v,h,t]
+                ndwiYearsMask[y,i[y]]=Mask[v,h,t]
+    #                    ndwiMonths[y,m,d[y,m]]=ndwiAll[v,h,t]
             
             for y in range(nyears):
                for m in range(12):
-                   if d[y,m-1]>-1:
-                     ndviMedMonths[y,v,h,m]=np.ma.median(np.ma.masked_array(ndviMonths[y,m,:d[y,m-1]+1],ndviMonthsMask[y,m,:d[y,m-1]+1]))
-    #                     ndwiMedMonths[y,v,h,m]=np.median(ndwiMonths[y,m,:d[y,m-1]+1])
-                     ndvi90[y,v,h,m]=np.percentile(  np.ma.masked_array(ndviMonths[y,m,:d[y,m-1]+1],ndviMonthsMask[y,m,:d[y,m-1]+1]).compressed()  ,90)
-                     ndvi10[y,v,h,m]=np.percentile(  np.ma.masked_array(ndviMonths[y,m,:d[y,m-1]+1],ndviMonthsMask[y,m,:d[y,m-1]+1]).compressed()  ,10)
-    #                     ndwi90[y,v,h,m]=np.percentile(ndwiMonths[y,m,:d[y,m-1]+1],90)
-    #                     ndwi10[y,v,h,m]=np.percentile(ndwiMonths[y,m,:d[y,m-1]+1],10)
+                   if d[y,m]>0:
+                       if np.ma.is_masked(np.ma.sum(np.ma.masked_array(ndviMonths[y,m,:d[y,m]+1],ndviMonthsMask[y,m,:d[y,m]+1]))) == False:
+                          ndviMedMonths[y,v,h,m]=np.ma.median(np.ma.masked_array(ndviMonths[y,m,:d[y,m]+1],ndviMonthsMask[y,m,:d[y,m]+1]))
+        #                     ndwiMedMonths[y,v,h,m]=np.median(ndwiMonths[y,m,:d[y,m]+1])
+                          ndvi90[y,v,h,m]=np.percentile(  np.ma.masked_array(ndviMonths[y,m,:d[y,m]+1],ndviMonthsMask[y,m,:d[y,m]+1]).compressed()  ,90)
+                          ndvi10[y,v,h,m]=np.percentile(  np.ma.masked_array(ndviMonths[y,m,:d[y,m]+1],ndviMonthsMask[y,m,:d[y,m]+1]).compressed()  ,10)
+        #                     ndwi90[y,v,h,m]=np.percentile(ndwiMonths[y,m,:d[y,m]+1],90)
+        #                     ndwi10[y,v,h,m]=np.percentile(ndwiMonths[y,m,:d[y,m]+1],10)
                ndwi90[y,v,h]=np.percentile(   np.ma.masked_array(ndwiYears[y,:i[y]+1],ndwiYearsMask[y,:i[y]+1]).compressed()  ,90)
                ndwi10[y,v,h]=np.percentile(   np.ma.masked_array(ndwiYears[y,:i[y]+1],ndwiYearsMask[y,:i[y]+1]).compressed()  ,10)
                globals().update(locals())
-    exit()
     ###########################
     
     rollingmed_pix=np.zeros(shape=(pixels,pixels,k))
@@ -205,7 +205,7 @@ def feature_array(dltile):
     for v in range(pixels):
         for h in range(pixels):
             if oceanMask[v,h]==False:
-                rollingmed_pix[v,h,:]=rolling_median(ndviAll[v,h,:k],10)
+                rollingmed_pix[v,h,:]=rolling_median(ndviAll[v,h,:n_good_days],10)
     #                rollingmed_pix_ndwi[v,h,:]=rolling_median(ndwiAll[v,h,:k],10)
     
     rollingmed_pix_mask=np.zeros(shape=(rollingmed_pix.shape),dtype=bool)
@@ -239,7 +239,7 @@ def feature_array(dltile):
     ydataMask=np.zeros(shape=(nyears,pixels,pixels,n_good_days))
     globals().update(locals())
     i=np.zeros(shape=(nyears),dtype=int)
-    # break data up into years
+    # break rollingmed data up into years
     for v in range(pixels):
         for h in range(pixels):
             if oceanMask[v,h]==True:
@@ -320,8 +320,8 @@ def feature_array(dltile):
             features[tile,y,p,22]=ndvi10R[y,p,10]
             features[tile,y,p,23]=ndvi10R[y,p,11]
             
-#            features[tile,y,p,24]=ndwi90R[y,p]
-#            features[tile,y,p,25]=ndwi10R[y,p]
+            features[tile,y,p,24]=ndwi90R[y,p]
+            features[tile,y,p,25]=ndwi10R[y,p]
             
             features[tile,y,p,26]=stdDevR[y,p]
             features[tile,y,p,27]=parAr[y,p]
@@ -348,11 +348,12 @@ for tile in range(1):
     dltile=dltiles['features'][tile]
     feature_array(dltile)
 
-for i in range(len(dltiles['features'])):
-    if not os.path.exists(r'../saved_vars/'+str(lonlist[i])+'_'+str(latlist[i])+'/features'):
-        dltile=dltiles['features'][i]
-        feature_array(dltile)
-    
+#for i in range(len(dltiles['features'])):
+#    if not os.path.exists(r'../saved_vars/'+str(lonlist[i])+'_'+str(latlist[i])+'/features'):
+#        tile=i
+#        dltile=dltiles['features'][i]
+#        feature_array(dltile)
+#    
 
 
 

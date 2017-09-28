@@ -28,19 +28,40 @@ wd='/Users/lilllianpetersen/Google Drive/science_fair/'
 
 vlen=992
 hlen=992
-start='2016-01-01'
-startyear=2016
+start='2015-01-01'
 end='2016-12-31'
-nyears=1
+nyears=2
 country='US'
 makePlots=False
 padding = 16
 pixels = vlen+2*padding
 res = 120.0
 
-matches=dl.places.find('united-states_washington')
+vlen=100
+hlen=100
+padding=0
+pixels=vlen+2*padding
+    
+
+matches=dl.places.find('united-states_iowa')
 aoi = matches[0]
 shape = dl.places.shape(aoi['slug'], geom='low')
+
+clas=["" for x in range(12)]
+clasLong=["" for x in range(255)]
+clasDict={}
+clasNumDict={}
+f=open(wd+'data/ground_data.txt')                                
+for line in f:
+    tmp=line.split(',')
+    clasNumLong=int(tmp[0])
+    clasLong[clasNumLong]=tmp[1]
+    clasNum=int(tmp[3])
+    clas[clasNum]=tmp[2]
+    
+    clasDict[clasLong[clasNumLong]]=clas[clasNum]
+    clasNumDict[clasNumLong]=clasNum
+    
 
 dltiles = dl.raster.dltiles_from_shape(res, vlen, padding, shape)
 
@@ -56,13 +77,15 @@ lonsave=lonsave.replace('.','-')
 
 features=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/features.npy')
 target=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/target.npy')
-clas=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/clas.npy')
-featuresR=features.reshape(1*1048576,30)
-targetR=target.reshape(1*1048576)
+features=features[tile]
+target=target[tile]
+featuresR=features.reshape(nyears*features.shape[1],30)
+targetR=target.reshape(nyears*features.shape[1])
+#clas=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/clas.npy')
+#featuresR=features.reshape(nyears*features.shape[2],30)
+#targetR=target.reshape(nyears*features.shape[2])
 
-#X=featuresR[:1000000]
-#Y=targetR[:1000000]
-
+# break the data up into different classes
 classes=-9999*np.ones(shape=(10,len(featuresR),30))
 avg_classes=-9999*np.ones(shape=(10,30))
 pix=-1*np.ones(shape=(10),dtype=int)
@@ -71,13 +94,18 @@ for i in range(len(featuresR)):
     pix[cls]+=1
     classes[cls,pix[cls],:]=featuresR[i,:]
 
-pxNum=177
-learn_data=np.zeros(shape=(pxNum*9+1,30))
-y_true=np.zeros(shape=(pxNum*9+1))
-X=np.zeros(shape=(pxNum*9+1,30))
-y=np.zeros(shape=(pxNum*9+1))
+# get an even number of each class to test on
+pxNum=289/2
+#clsnum=9
+clsnum=4
+predict_data=np.zeros(shape=(pxNum*clsnum,30))
+y_true=np.zeros(shape=(pxNum*clsnum))
+X=np.zeros(shape=(pxNum*clsnum,30))
+y=np.zeros(shape=(pxNum*clsnum))
 i=-1
-for cls in range(9):
+#for cls in range(9):
+#for cls in [1,4,6,7,8]:
+for cls in [1,6,7,8]:
     for px in range(pxNum):
         i+=1
         
@@ -85,16 +113,25 @@ for cls in range(9):
         y[i]=cls
 i=-1
 pxcls=np.zeros(shape=(9))
-for cls in range(9):
+#for cls in range(9):
+#for cls in [1,4,6,7,8]:
+for cls in [1,6,7,8]:
     for px in range(pxNum):
         i+=1
-        learn_data[i,:]=classes[cls,px+pxNum,:]
+        predict_data[i,:]=classes[cls,px+pxNum,:]
         y_true[i]=cls
         
 
-clf = RandomForestClassifier()
+clf = RandomForestClassifier(n_estimators=15, max_features=5, n_jobs=-1)
 clf.fit(X,y)
-y_pred=clf.predict(learn_data)
+y_pred=clf.predict(predict_data)
+
+clas_labels=[]
+clas_labels.append(clas[1])
+#clas_labels.append(clas[4])
+clas_labels.append(clas[6])
+clas_labels.append(clas[7])
+clas_labels.append(clas[8])
 
 def plot_confusion_matrix(cm, classes,
                           normalize=True,
@@ -138,11 +175,11 @@ np.set_printoptions(precision=2)
 
 # Plot normalized confusion matrix
 plt.figure(1,figsize=(10,10))
-plot_confusion_matrix(cnf_matrix, classes=clas, normalize=True,
+plot_confusion_matrix(cnf_matrix, classes=clas_labels, normalize=True,
                       title='Normalized confusion matrix')
-
-plt.savefig(wd+'/figures/conf_matrix_unnormalized.pdf')
-plt.show()
+#
+#plt.savefig(wd+'/figures/conf_matrix_unnormalized.pdf')
+#plt.show()
 
 for cls in range(10):
     for ftr in range(30):
@@ -160,8 +197,8 @@ for cls in range(10):
 #    plt.colorbar()
  
     
-
-
+exit()
+plt.clf()
 plt.plot(avg_classes[5,12:24],'--b',label=clas[5])
 plt.plot(avg_classes[5,:12],'--b')
 plt.plot(avg_classes[7,:12],'--g',label=clas[7])
@@ -172,6 +209,8 @@ plt.plot(avg_classes[1,:12],'--y',label=clas[1])
 plt.plot(avg_classes[1,12:24],'--y')
 plt.plot(avg_classes[4,:12],'--m',label=clas[4])
 plt.plot(avg_classes[4,12:24],'--m')
+plt.plot(avg_classes[8,:12],'--k',label=clas[8])
+plt.plot(avg_classes[8,12:24],'--k')
 plt.axis([0,12,0,1])
 plt.legend()
 
