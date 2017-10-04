@@ -31,6 +31,9 @@ hlen=992
 start='2015-01-01'
 end='2016-12-31'
 nyears=2
+#start='2016-01-01'
+#end='2016-12-31'
+#nyears=1
 country='US'
 makePlots=False
 padding = 16
@@ -44,6 +47,7 @@ pixels=vlen+2*padding
     
 
 matches=dl.places.find('united-states_iowa')
+#matches=dl.places.find('united-states_washington')
 aoi = matches[0]
 shape = dl.places.shape(aoi['slug'], geom='low')
 
@@ -77,8 +81,8 @@ lonsave=lonsave.replace('.','-')
 
 features=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/features.npy')
 target=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/target.npy')
-features=features[tile]
-target=target[tile]
+#features=features[tile]
+#target=target[tile]
 featuresR=features.reshape(nyears*features.shape[1],30)
 targetR=target.reshape(nyears*features.shape[1])
 #clas=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/clas.npy')
@@ -95,9 +99,10 @@ for i in range(len(featuresR)):
     classes[cls,pix[cls],:]=featuresR[i,:]
 
 # get an even number of each class to test on
-pxNum=289/2
+#pxNum=289/2
+pxNum=13236/2
 #clsnum=9
-clsnum=4
+clsnum=6
 predict_data=np.zeros(shape=(pxNum*clsnum,30))
 y_true=np.zeros(shape=(pxNum*clsnum))
 X=np.zeros(shape=(pxNum*clsnum,30))
@@ -105,7 +110,7 @@ y=np.zeros(shape=(pxNum*clsnum))
 i=-1
 #for cls in range(9):
 #for cls in [1,4,6,7,8]:
-for cls in [1,6,7,8]:
+for cls in [1,4,5,6,7,8]:
     for px in range(pxNum):
         i+=1
         
@@ -115,20 +120,22 @@ i=-1
 pxcls=np.zeros(shape=(9))
 #for cls in range(9):
 #for cls in [1,4,6,7,8]:
-for cls in [1,6,7,8]:
+for cls in [1,4,5,6,7,8]:
     for px in range(pxNum):
         i+=1
         predict_data[i,:]=classes[cls,px+pxNum,:]
         y_true[i]=cls
         
 
-clf = RandomForestClassifier(n_estimators=15, max_features=5, n_jobs=-1)
+#clf = RandomForestClassifier(n_estimators=15, max_features=5, n_jobs=-1)
+clf = RandomForestClassifier(n_jobs=-1)
 clf.fit(X,y)
 y_pred=clf.predict(predict_data)
 
 clas_labels=[]
 clas_labels.append(clas[1])
-#clas_labels.append(clas[4])
+clas_labels.append(clas[4])
+clas_labels.append(clas[5])
 clas_labels.append(clas[6])
 clas_labels.append(clas[7])
 clas_labels.append(clas[8])
@@ -177,8 +184,9 @@ np.set_printoptions(precision=2)
 plt.figure(1,figsize=(10,10))
 plot_confusion_matrix(cnf_matrix, classes=clas_labels, normalize=True,
                       title='Normalized confusion matrix')
+exit()
 #
-#plt.savefig(wd+'/figures/conf_matrix_unnormalized.pdf')
+plt.savefig(wd+'figures/US/'+str(lon)+'_'+str(lat)+'/conf_matrix_normalized.pdf')
 #plt.show()
 
 for cls in range(10):
@@ -197,7 +205,7 @@ for cls in range(10):
 #    plt.colorbar()
  
     
-exit()
+
 plt.clf()
 plt.plot(avg_classes[5,12:24],'--b',label=clas[5])
 plt.plot(avg_classes[5,:12],'--b')
@@ -213,6 +221,7 @@ plt.plot(avg_classes[8,:12],'--k',label=clas[8])
 plt.plot(avg_classes[8,12:24],'--k')
 plt.axis([0,12,0,1])
 plt.legend()
+plt.savefig(wd+'figures/US/'+str(lon)+'_'+str(lat)+'/different_land_types.pdf')
 
 
 

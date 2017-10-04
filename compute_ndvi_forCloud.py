@@ -70,7 +70,7 @@ padding=0
 pixels=vlen+2*padding
     
 
-clas=["" for x in range(12)]
+clas=["" for x in range(7)]
 clasLong=["" for x in range(255)]
 clasDict={}
 clasNumDict={}
@@ -220,7 +220,7 @@ def tile_function(dltile,makePlots):
     print('Available bands: %s' % ', '.join([a for a in avail_bands]))
     
     band_info = dl.raster.get_bands_by_constellation("MO")
-    
+    exit()
     dayOfYear=np.zeros(shape=(n_images))
     year=np.zeros(shape=(n_images),dtype=int)
     month=np.zeros(shape=(n_images),dtype=int)
