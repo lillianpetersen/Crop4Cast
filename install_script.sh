@@ -12,7 +12,7 @@ sudo pip install -U "celery[redis]"
 sudo apt-get -y install redis-server
 
 pip install --upgrade pip
-sudo pip install matplotlib
+# sudo pip install matplotlib
 sudo pip install descarteslabs
 sudo pip install numpy
 sudo pip install sklearn

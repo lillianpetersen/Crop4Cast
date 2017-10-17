@@ -9,7 +9,7 @@ import sklearn
 from sklearn import svm
 import time
 from sklearn.preprocessing import StandardScaler
-#from celery import Celery
+from celery import Celery
 
 ####################
 # Function         #
@@ -47,28 +47,30 @@ def rolling_median(var,window):
     
 ####################        
 
-#celery = Celery('compute_ndvi', broker='redis://localhost:6379/0')
+celery = Celery('compute_ndvi_forCloud', broker='redis://localhost:6379/0')
 
-#wd='gs://lillian-bucket-storage/'
-wd='/Users/lilllianpetersen/Google Drive/science_fair/'
+wd='gs://lillian-bucket-storage/'
+#wd='/Users/lilllianpetersen/Google Drive/science_fair/'
 
+
+# Celery task goes into start-up script
 
 vlen=992
 hlen=992
-start='2015-01-01'
+start='2001-01-01'
 end='2016-12-31'
-nyears=2
+nyears=16
 country='US'
 makePlots=False
 padding = 16
 pixels = vlen+2*padding
 res = 120.0
 
-vlen=100
-hlen=100
-padding=0
-pixels=vlen+2*padding
-    
+#vlen=100
+#hlen=100
+#padding=0
+#pixels=vlen+2*padding
+#    
 
 clas=["" for x in range(7)]
 clasLong=["" for x in range(255)]
@@ -91,7 +93,8 @@ variables: lon, lat, pixels, start, end, country, makePlots
 """
 
 #matches=dl.places.find('united-states_washington')
-matches=dl.places.find('united-states_iowa')
+#matches=dl.places.find('united-states_iowa')
+matches=dl.places.find('north-america_united-states')
 aoi = matches[0]
 shape = dl.places.shape(aoi['slug'], geom='low')
 
@@ -99,6 +102,7 @@ dltiles = dl.raster.dltiles_from_shape(res, vlen, padding, shape)
 
 lonlist=np.zeros(shape=(len(dltiles['features'])))
 latlist=np.zeros(shape=(len(dltiles['features'])))
+
 for i in range(len(dltiles['features'])):
     lonlist[i]=dltiles['features'][i]['geometry']['coordinates'][0][0][0]
     latlist[i]=dltiles['features'][i]['geometry']['coordinates'][0][0][1]
@@ -106,11 +110,11 @@ for i in range(len(dltiles['features'])):
 features=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels,6))
 target=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels))
 
-#@celery.task  
+@celery.task  
 def tile_function(dltile,makePlots):
     lon=dltile['geometry']['coordinates'][0][0][0]
     lat=dltile['geometry']['coordinates'][0][0][1]
-    globals().update(locals())
+    #globals().update(locals())
     print lon
     print lat
     latsave=str(lat)
@@ -220,7 +224,7 @@ def tile_function(dltile,makePlots):
     print('Available bands: %s' % ', '.join([a for a in avail_bands]))
     
     band_info = dl.raster.get_bands_by_constellation("MO")
-    exit()
+
     dayOfYear=np.zeros(shape=(n_images))
     year=np.zeros(shape=(n_images),dtype=int)
     month=np.zeros(shape=(n_images),dtype=int)
@@ -457,7 +461,7 @@ def tile_function(dltile,makePlots):
             plt.savefig(wd+'figures/'+country+'/'+str(lon)+'_'+str(lat)+'/ndwi_'+str(date)+'_'+str(k)+'.pdf')
             plt.clf()
         
-        globals().update(locals())
+        #globals().update(locals())
         
         ############################
         # Variables for Histogram  #
@@ -502,7 +506,7 @@ def tile_function(dltile,makePlots):
     
     
 #        rollingmed=rolling_median(ndviAvg[0:k],10)
-    rollingmed=rolling_median(ndviMed[0:k],10)
+#    rollingmed=rolling_median(ndviMed[0:k],10)
     
     x2=plotYear[0:k]
 #    ydata2=ndviAvg[0:k]
@@ -533,7 +537,7 @@ def tile_function(dltile,makePlots):
 #        plt.plot(rollingmed[2:])
 #        plt.ylim(-1,1)
 #        plt.savefig(wd+'test_fig'+'_rolling_max.pdf')
-    globals().update(locals())
+    #globals().update(locals())
 
     ########################
     # Save variables       #
@@ -543,35 +547,36 @@ def tile_function(dltile,makePlots):
     if not os.path.exists(r'../saved_vars/'+str(lon)+'_'+str(lat)):
         os.makedirs(r'../saved_vars/'+str(lon)+'_'+str(lat))
              
-    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/ndwiAll_2',ndwiAll) 
-    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/Mask_2',Mask)
-    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/oceanMask_2',oceanMask)
-    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/plotYear_2',plotYear)
+    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/ndwiAll',ndwiAll) 
+    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/Mask',Mask)
+    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/oceanMask',oceanMask)
+    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/plotYear',plotYear)
 ##    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/ndviHist',ndviHist)
 ##    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/ndviAvg',ndviAvg)
 ##    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/ndviAvg',ndviMed)
-    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/n_good_days_2',int(k))
-    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/month_2',month)
-    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/year_2',year)
+    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/n_good_days',int(k))
+    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/month',month)
+    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/year',year)
 ##    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/edges',edges)
-    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/arrClas_2',arrClas)
-    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/ndviAll_2',ndviAll)
+    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/arrClas',arrClas)
+    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/ndviAll',ndviAll)
     
-    n_good_days=int(k)
+    ### Upload files to bucket
+    ### Delete files
     
-    
-for tile in range(1):
-    tile=4
+for tile in range(len(dltiles['features'])):
     dltile=dltiles['features'][tile]
     tile_function(dltile,makePlots)   
     
-#    
-#for i in range(len(dltiles['features'])):
-#    if not os.path.exists(r'../saved_vars/'+str(lonlist[i])+'_'+str(latlist[i])+'/ndviAll'):
-#        dltile=dltiles['features'][i]
-#        tile_function(dltile)
-#        
-#        
+    
+for i in range(len(dltiles['features'])):
+    ## Check in the bucket
+    ## gsutil ls
+    if not os.path.exists(r'../saved_vars/'+str(lonlist[i])+'_'+str(latlist[i])+'/ndviAll'):
+        dltile=dltiles['features'][i]
+        tile_function(dltile)
+        
+        
         
         
         

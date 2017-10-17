@@ -9,7 +9,7 @@ import sklearn
 from sklearn import svm
 import time
 from sklearn.preprocessing import StandardScaler
-#from celery import Celery
+from celery import Celery
 
 ####################
 # Function         #
@@ -47,10 +47,10 @@ def rolling_median(var,window):
     
 ####################        
 
-#celery = Celery('compute_ndvi', broker='redis://localhost:6379/0')
+celery = Celery('compute_ndvi', broker='redis://localhost:6379/0')
 
-#wd='gs://lillian-bucket-storage/'
-wd='/Users/lilllianpetersen/Google Drive/science_fair/'
+wd='gs://lillian-bucket-storage/'
+#wd='/Users/lilllianpetersen/Google Drive/science_fair/'
 
 
 vlen=992
@@ -106,7 +106,7 @@ for i in range(len(dltiles['features'])):
 features=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels,30))
 target=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels))
 
-#@celery.task  
+@celery.task  
 def feature_array(dltile):
     lon=dltile['geometry']['coordinates'][0][0][0]
     lat=dltile['geometry']['coordinates'][0][0][1]
