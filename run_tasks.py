@@ -2,7 +2,7 @@ import descarteslabs as dl
 import argparse
 import subprocess
 # I find I need to do the import like this, from same directory:
-from compute_ndvi_forCloud import run_code
+from compute_ndvi_forCloud import tile_function
 
 def get_dltiles(): 
     vlen=992
@@ -35,7 +35,7 @@ def main(args):
     
     # fire off the tasks
     for tile in sorted(dltiles - done):
-        run_code.apply_async([tile], {'arraysize': args.arraysize,
+        tile_function.apply_async([tile], {'arraysize': args.arraysize,
                                     'sleeptime': args.sleeptime},
                           queue='myQueue')
 

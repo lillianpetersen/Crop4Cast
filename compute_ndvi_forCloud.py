@@ -111,7 +111,7 @@ features=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels,6))
 target=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels))
 
 @celery.task  
-def compute_ndvi_forCloud(dltile,makePlots=False):
+def tile_function(dltile,makePlots=False):
     vlen=992
     hlen=992
     start='2001-01-01'
