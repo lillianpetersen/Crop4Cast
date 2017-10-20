@@ -48,12 +48,12 @@ def rolling_median(var,window):
 ####################        
 
 celery = Celery('compute_ndvi_forCloud', broker='redis://localhost:6379/0')
-
-wd='gs://lillian-bucket-storage/'
-#wd='/Users/lilllianpetersen/Google Drive/science_fair/'
-
-
-# Celery task goes into start-up script
+#
+##wd='gs://lillian-bucket-storage/'
+wd='/Users/lilllianpetersen/Google Drive/science_fair/'
+#
+#
+## Celery task goes into start-up script
 
 vlen=992
 hlen=992
@@ -106,12 +106,39 @@ latlist=np.zeros(shape=(len(dltiles['features'])))
 for i in range(len(dltiles['features'])):
     lonlist[i]=dltiles['features'][i]['geometry']['coordinates'][0][0][0]
     latlist[i]=dltiles['features'][i]['geometry']['coordinates'][0][0][1]
-
+#
 features=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels,6))
 target=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels))
 
 @celery.task  
-def tile_function(dltile,makePlots):
+def compute_ndvi_forCloud(dltile,makePlots=False):
+    vlen=992
+    hlen=992
+    start='2001-01-01'
+    end='2016-12-31'
+    nyears=16
+    country='US'
+    makePlots=False
+    padding = 16
+    pixels = vlen+2*padding
+    res = 120.0
+    
+    clas=["" for x in range(7)]
+    clasLong=["" for x in range(255)]
+    clasDict={}
+    clasNumDict={}
+    f=open(wd+'data/ground_data.txt')                                
+    for line in f:
+        tmp=line.split(',')
+        clasNumLong=int(tmp[0])
+        clasLong[clasNumLong]=tmp[1]
+        clasNum=int(tmp[3])
+        clas[clasNum]=tmp[2]
+        
+        clasDict[clasLong[clasNumLong]]=clas[clasNum]
+        clasNumDict[clasNumLong]=clasNum
+    
+    
     lon=dltile['geometry']['coordinates'][0][0][0]
     lat=dltile['geometry']['coordinates'][0][0][1]
     #globals().update(locals())
@@ -122,8 +149,8 @@ def tile_function(dltile,makePlots):
     lonsave=str(lon)
     lonsave=lonsave.replace('.','-')
     
-    print '\n\n'
-    print 'dltile: '+str(tile)+' of '+str(len(dltiles['features']))
+#    print '\n\n'
+#    print 'dltile: '+str(tile)+' of '+str(len(dltiles['features']))
     
     ###############################################
     # Find Ground Classification data    
@@ -564,18 +591,18 @@ def tile_function(dltile,makePlots):
     ### Upload files to bucket
     ### Delete files
     
-for tile in range(len(dltiles['features'])):
-    dltile=dltiles['features'][tile]
-    tile_function(dltile,makePlots)   
-    
-    
-for i in range(len(dltiles['features'])):
-    ## Check in the bucket
-    ## gsutil ls
-    if not os.path.exists(r'../saved_vars/'+str(lonlist[i])+'_'+str(latlist[i])+'/ndviAll'):
-        dltile=dltiles['features'][i]
-        tile_function(dltile)
-        
+#for tile in range(len(dltiles['features'])):
+#    dltile=dltiles['features'][tile]
+#    tile_function(dltile,makePlots)   
+#    
+#    
+#for i in range(len(dltiles['features'])):
+#    ## Check in the bucket
+#    ## gsutil ls
+#    if not os.path.exists(r'../saved_vars/'+str(lonlist[i])+'_'+str(latlist[i])+'/ndviAll'):
+#        dltile=dltiles['features'][i]
+#        tile_function(dltile)
+#        
         
         
         
