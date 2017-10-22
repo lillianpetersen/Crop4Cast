@@ -9,35 +9,35 @@ def get_dltiles():
     padding = 16
     res = 120.0
     
-    """ get a list of dltiles"""
+    """ get a list of dltiles['features']"""
     matches=dl.places.find('north-america_united-states')
     aoi = matches[0]
     shape = dl.places.shape(aoi['slug'], geom='low')
     
-    dltiles = dl.raster.dltiles_from_shape(res, vlen, padding, shape)
+    dltiles= dl.raster.dltiles_from_shape(res, vlen, padding, shape)
 
     return dltiles
 
 def main(args):
     """run the tasks, with check for what's already done"""
 
-    dltiles = set(get_dltiles())
+    dltiles= get_dltiles()
 
     if args.dontcheck:
-        done = set()
+        done = list() #set()
     else:
         path = 'gs://lillian-bucket-storage/data'
         filelist = subprocess.check_output('gsutil ls %s/*.json'
                                            % path, shell=True).splitlines()
         done = {f.split('/')[-1].split('_')[0] for f in filelist}
 
-    print('running %d of %d tiles' % (len(dltiles - done), len(dltiles)))
+    print( type(dltiles['features']), len(dltiles['features']), type(done), len(done) )
+  #  print('running %d of %d tiles' % (len(dltiles['features']) -len(done)), len(dltiles))
     
     # fire off the tasks
-    for tile in sorted(dltiles - done):
-        tile_function.apply_async([tile], {'arraysize': args.arraysize,
-                                    'sleeptime': args.sleeptime},
-                          queue='myQueue')
+  #  for tile in sorted(dltiles['features'] - done):
+    for tile in range(len(dltiles['features'])):
+        tile_function.apply_async([dltiles['features'][tile]], queue='myQueue')
 
     
 # we make the module executable, with optional command-line arguments

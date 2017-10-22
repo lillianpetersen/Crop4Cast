@@ -47,20 +47,20 @@ def rolling_median(var,window):
     
 ####################        
 
-celery = Celery('compute_ndvi_forCloud', broker='redis://localhost:6379/0')
+#celery = Celery('compute_ndvi_forCloud', broker='redis://localhost:6379/0')
 #
 ##wd='gs://lillian-bucket-storage/'
 wd='/Users/lilllianpetersen/Google Drive/science_fair/'
-#
-#
-## Celery task goes into start-up script
+
+
+# Celery task goes into start-up script
 
 vlen=992
 hlen=992
 start='2001-01-01'
 end='2016-12-31'
 nyears=16
-country='US'
+country='Brazil'
 makePlots=False
 padding = 16
 pixels = vlen+2*padding
@@ -72,34 +72,16 @@ res = 120.0
 #pixels=vlen+2*padding
 #    
 
-clas=["" for x in range(7)]
-clasLong=["" for x in range(255)]
-clasDict={}
-clasNumDict={}
-f=open(wd+'data/ground_data.txt')                                
-for line in f:
-    tmp=line.split(',')
-    clasNumLong=int(tmp[0])
-    clasLong[clasNumLong]=tmp[1]
-    clasNum=int(tmp[3])
-    clas[clasNum]=tmp[2]
-    
-    clasDict[clasLong[clasNumLong]]=clas[clasNum]
-    clasNumDict[clasNumLong]=clasNum
-    
-    
-"""function to compute ndvi and make summary plots
-variables: lon, lat, pixels, start, end, country, makePlots
-"""
 
 #matches=dl.places.find('united-states_washington')
 #matches=dl.places.find('united-states_iowa')
-matches=dl.places.find('north-america_united-states')
+#matches=dl.places.find('north-america_united-states')
+
+matches=dl.places.find('south-america_brazil_rondonia')
 aoi = matches[0]
 shape = dl.places.shape(aoi['slug'], geom='low')
 
 dltiles = dl.raster.dltiles_from_shape(res, vlen, padding, shape)
-
 lonlist=np.zeros(shape=(len(dltiles['features'])))
 latlist=np.zeros(shape=(len(dltiles['features'])))
 
@@ -110,19 +92,9 @@ for i in range(len(dltiles['features'])):
 features=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels,6))
 target=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels))
 
-@celery.task  
+#@celery.task  
 def tile_function(dltile,makePlots=False):
-    vlen=992
-    hlen=992
-    start='2001-01-01'
-    end='2016-12-31'
-    nyears=16
-    country='US'
-    makePlots=False
-    padding = 16
-    pixels = vlen+2*padding
-    res = 120.0
-    
+   
     clas=["" for x in range(7)]
     clasLong=["" for x in range(255)]
     clasDict={}
@@ -141,7 +113,7 @@ def tile_function(dltile,makePlots=False):
     
     lon=dltile['geometry']['coordinates'][0][0][0]
     lat=dltile['geometry']['coordinates'][0][0][1]
-    #globals().update(locals())
+    globals().update(locals())
     print lon
     print lat
     latsave=str(lat)
@@ -191,6 +163,7 @@ def tile_function(dltile,makePlots=False):
     
     band_info = dl.raster.get_bands_by_constellation("CDL")    
     
+    globals().update(locals())
     try:
         valid_range = band_info['class']['valid_range']
         arr, meta = dl.raster.ndarray(
@@ -488,7 +461,7 @@ def tile_function(dltile,makePlots=False):
             plt.savefig(wd+'figures/'+country+'/'+str(lon)+'_'+str(lat)+'/ndwi_'+str(date)+'_'+str(k)+'.pdf')
             plt.clf()
         
-        #globals().update(locals())
+        globals().update(locals())
         
         ############################
         # Variables for Histogram  #
@@ -564,7 +537,7 @@ def tile_function(dltile,makePlots=False):
 #        plt.plot(rollingmed[2:])
 #        plt.ylim(-1,1)
 #        plt.savefig(wd+'test_fig'+'_rolling_max.pdf')
-    #globals().update(locals())
+    globals().update(locals())
 
     ########################
     # Save variables       #
@@ -591,11 +564,12 @@ def tile_function(dltile,makePlots=False):
     ### Upload files to bucket
     ### Delete files
     
-#for tile in range(len(dltiles['features'])):
-#    dltile=dltiles['features'][tile]
-#    tile_function(dltile,makePlots)   
-#    
-#    
+for tile in range(len(dltiles['features'])):
+    tile=29
+    dltile=dltiles['features'][tile]
+    tile_function(dltile)   
+    
+    
 #for i in range(len(dltiles['features'])):
 #    ## Check in the bucket
 #    ## gsutil ls
