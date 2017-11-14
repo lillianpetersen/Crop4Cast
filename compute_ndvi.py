@@ -45,6 +45,33 @@ def rolling_median(var,window):
     
     return med    
     
+def mask_water(image):
+    shape = image.shape
+    length = image.size
+
+    # reshape to linear
+    x = image.reshape(length)
+
+    # slice every 4th element
+    y = x[0::4]
+
+    # mask if less than 60 for NIR
+    sixty = np.ones(len(y))*60
+    z = y < sixty
+
+    # multiply by 4
+    oceanMask = np.repeat(z, 4)
+
+    # apply mask to original array
+    masked = np.ma.masked_array(x, oceanMask)
+    b = np.ma.filled(masked, 0)
+
+    # reshape
+    c = b.reshape(shape)
+    masked = masked.reshape(shape)
+    oceanMask = oceanMask.reshape(shape)
+    oceanMask = oceanMask[:,:,0]
+    return c, oceanMask
 ####################        
 
 #celery = Celery('compute_ndvi_forCloud', broker='redis://localhost:6379/0')
@@ -55,14 +82,14 @@ wd='/Users/lilllianpetersen/Google Drive/science_fair/'
 
 # Celery task goes into start-up script
 
-vlen=992
-hlen=992
+vlen=480
+hlen=480
 start='2001-01-01'
 #start='2001-07-01'
 end='2016-12-31'
 nyears=16
-country='Brazil'
-makePlots=True
+country='Puerto_Rico'
+makePlots=False
 padding = 16
 pixels = vlen+2*padding
 res = 120.0
@@ -79,20 +106,23 @@ res = 120.0
 #matches=dl.places.find('south-america_brazil_rondonia')
 #matches=dl.places.find('united-states_iowa')
 
-matches=dl.places.find('puerto-rico')
+matches=dl.places.find('puerto-rico_san-juan')
 aoi = matches[0]
 shape = dl.places.shape(aoi['slug'], geom='low')
 
-dltiles = dl.raster.dltiles_from_shape(res, vlen, padding, shape)
-lonlist=np.zeros(shape=(len(dltiles['features'])))
-latlist=np.zeros(shape=(len(dltiles['features'])))
+#dltiles = dl.raster.dltiles_from_shape(res, pixels, padding, shape)
+dltile=dl.raster.dltile_from_latlon(18.3,-66,res,vlen,padding)
+#lonlist=np.zeros(shape=(len(dltiles['features'])))
+#latlist=np.zeros(shape=(len(dltiles['features'])))
 
-for i in range(len(dltiles['features'])):
-    lonlist[i]=dltiles['features'][i]['geometry']['coordinates'][0][0][0]
-    latlist[i]=dltiles['features'][i]['geometry']['coordinates'][0][0][1]
-#
-features=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels,6))
-target=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels))
+#for i in range(len(dltiles['features'])):
+#    lonlist[i]=dltiles['features'][i]['geometry']['coordinates'][0][0][0]
+#    latlist[i]=dltiles['features'][i]['geometry']['coordinates'][0][0][1]
+
+#features=np.zeros(shape=(len(dltiles),nyears,pixels*pixels,6))
+#target=np.zeros(shape=(len(dltiles),nyears,pixels*pixels))
+features=np.zeros(shape=(len(dltile),nyears,pixels*pixels,6))
+target=np.zeros(shape=(len(dltile),nyears,pixels*pixels))
 
 #@celery.task  
 def tile_function(dltile,makePlots=False):
@@ -111,7 +141,6 @@ def tile_function(dltile,makePlots=False):
         
         clasDict[clasLong[clasNumLong]]=clas[clasNum]
         clasNumDict[clasNumLong]=clasNum
-    
     
     lon=dltile['geometry']['coordinates'][0][0][0]
     lat=dltile['geometry']['coordinates'][0][0][1]
@@ -208,22 +237,97 @@ def tile_function(dltile,makePlots=False):
    #         if arrClas[v,h]==0:
    #             oceanMask[v,h]=True
     ###############################################
-    
-    images = dl.metadata.search(
-        const_id=["MO", "MY"],
+     
+    imagesL8 = dl.metadata.search(
+        const_id=["L8"],
+        #const_id=["MO"],
         start_time=start,
         end_time=end,
         geom=dltile['geometry'],
         cloud_fraction=0.8,
         limit = 2000
         )
-    
+
+    band_info_L8=dl.metadata.bands(products='landsat:LC08:PRE:TOAR')[4]
+    nonCloudDays=0
+    for j in range(len(imagesL8['features'])):
+        sceneL8 = imagesL8['features'][j]['id']
+        ###############################################
+        # Find Ocean Mask 
+        ############################################### 
+        
+        #######################
+        # Get cloud data      #
+        #######################
+        try:
+            default_range = band_info_L8['default_range']
+            arrCloud, meta = dl.raster.ndarray(
+                sceneL8,
+                resolution=dltile['properties']['resolution'],
+                bounds=dltile['properties']['outputBounds'],
+                srs=dltile['properties']['cs_code'],
+                bands=['visual_cloud_mask', 'alpha'],
+                scales=[[default_range[0], default_range[1]]],
+                data_type='Float32'
+                )
+        except:
+            print('cloud: %s could not be retreived' % sceneL8)
+            continue 
+
+        # take out days with too many clouds
+        maskforCloud = arrCloud[:, :, 0] == 0 # True=good False=bad
+        if np.sum(maskforCloud)<0.15*(pixels*pixels):
+            print 'clouds: continued'
+            continue        
+        #######################
+	
+        nonCloudRatio=np.sum(maskforCloud)
+        if nonCloudRatio>0.95*(pixels*pixels):
+            nonCloudDays+=1
+            if nonCloudDays==1:
+        	bestNonCloudRatio=nonCloudRatio
+            if nonCloudRatio>=bestNonCloudRatio:
+                print 'using ', j, 'for oceanMask'
+                arr, meta = dl.raster.ndarray(
+                    sceneL8,
+                    resolution=dltile['properties']['resolution'],
+                    bounds=dltile['properties']['outputBounds'],
+                    srs=dltile['properties']['cs_code'],
+                    bands=['nir', 'swir1', 'red', 'alpha'],
+                    scales=[[0,6000], [0, 6000], [0, 6000], None],
+                    data_type='Byte',
+                    )
+
+                plt.figure(figsize=[16,16])
+                plt.imshow(arr)
+		date=imagesL8['features'][j]['properties']['acquired'][0:10]
+                plt.savefig(wd+'figures/'+country+'/'+str(lon)+'_'+str(lat)+'/ocean_mask_'+str(date)+'_'+str(j)+'.pdf')
+
+                image_pixels = arr
+                image_pixels, oceanMask = mask_water(image_pixels) # 1==bad 0=good
+                plt.figure(figsize=[16,16])
+                plt.imshow(image_pixels)
+                plt.savefig(wd+'figures/'+country+'/'+str(lon)+'_'+str(lat)+'/ocean_mask_with_mask_'+str(date)+'_'+str(j)+'.pdf')
+        ####################################################
+    exit()
+    images = dl.metadata.search(
+        #const_id=["L8"],
+        const_id=["MO"],
+        start_time=start,
+        end_time=end,
+        geom=dltile['geometry'],
+        cloud_fraction=0.8,
+        limit = 2000
+        )
+
     n_images = len(images['features'])
     print('Number of image matches: %d' % n_images)
     mo = dl.raster.get_bands_by_constellation("MO").keys()
     my = dl.raster.get_bands_by_constellation("MY").keys()
+    #avail_bands = dl.raster.get_bands_by_constellation("L8").keys()
     avail_bands = set(mo).intersection(my)
     print('Available bands: %s' % ', '.join([a for a in avail_bands]))
+    #print(avail_bands)
     
     #band_info = dl.raster.get_bands_by_constellation("MO")
     band_info=dl.metadata.bands(products='modis:09:CREFL')[-1]
@@ -235,12 +339,14 @@ def tile_function(dltile,makePlots=False):
     plotYear=np.zeros(shape=(n_images))
     xtime=[]
     i=-1
+    globals().update(locals())
     for feature in images['features']:
         i+=1
         # get the scene id
         scene = feature['id']
             
         xtime.append(str(images['features'][i]['id'][20:30]))
+	#xtime.append(str(images['features'][i]['properties']['acquired'][0:10]))
         date=xtime[i]
         year[i]=xtime[i][0:4]
         month[i]=xtime[i][5:7]
@@ -250,22 +356,23 @@ def tile_function(dltile,makePlots=False):
         
         
     indexSorted=np.argsort(plotYear)
-    
+    globals().update(locals())
     ####################
     # Define Variables #
     ####################
+    print pixels
     ndviAll=-9999*np.ones(shape=(pixels,pixels,n_images))
     ndwiAll=np.zeros(shape=(pixels,pixels,n_images))
-#    cloudAll=-9999*np.ones(shape=(pixels,pixels,n_images)) 
+    #cloudAll=-9999*np.ones(shape=(pixels,pixels,n_images)) 
     Mask=np.ones(shape=(pixels,pixels,n_images),dtype=bool) 
     dayOfYear=np.zeros(shape=(n_images))
     year=np.zeros(shape=(n_images))
     month=np.zeros(shape=(n_images))
     day=np.zeros(shape=(n_images))
     plotYear=np.zeros(shape=(n_images))
-#    ndviHist=np.zeros(shape=(40,n_images))
-#    ndviAvg=np.zeros(shape=(n_images))
-#    ndviMed=np.zeros(shape=(n_images))
+    #ndviHist=np.zeros(shape=(40,n_images))
+    #ndviAvg=np.zeros(shape=(n_images))
+    #ndviMed=np.zeros(shape=(n_images))
     xtime=[]
     
     ndviHist=np.zeros(shape=(40,n_images))
@@ -273,7 +380,6 @@ def tile_function(dltile,makePlots=False):
     ndviMed=np.zeros(shape=(n_images))
     ####################
     k=-1
-    
     for j in range(len(indexSorted)):
 #    for j in range(10):
         # get the scene id
@@ -298,6 +404,7 @@ def tile_function(dltile,makePlots=False):
         except:
             print('ndvi: %s could not be retreived' % scene)
             continue
+        globals().update(locals())
        
         ###############################################
         # Test for bad days
@@ -349,6 +456,7 @@ def tile_function(dltile,makePlots=False):
         ############################################### 
         
         xtime.append(str(images['features'][indexSorted[j]]['id'][20:30]))
+	#xtime.append(str(images['features'][k]['properties']['acquired'][0:10]))
         date=xtime[k]
         year[k]=xtime[k][0:4]
         month[k]=xtime[k][5:7]
@@ -368,7 +476,7 @@ def tile_function(dltile,makePlots=False):
         
         for v in range(pixels):
             for h in range(pixels):
-                if maskforCloud[v,h]==0 and maskforNDVI[v,h]==0:# and oceanMask[v,h]==0:
+                if maskforCloud[v,h]==0 and maskforNDVI[v,h]==0 and oceanMask[v,h]==0:
                     Mask[v,h,k]=0
         
         if makePlots:
@@ -378,7 +486,7 @@ def tile_function(dltile,makePlots=False):
 
             masked_ndvi = np.ma.masked_array(arrNDVI[:, :, 0], Mask[:,:,k])
             plt.figure(figsize=[16,16])
-            plt.imshow(masked_ndvi, cmap='jet', vmin=0, vmax=1)
+            plt.imshow(masked_ndvi, cmap='jet', vmin=-.6, vmax=1)
             #plt.imshow(masked_ndvi, cmap='jet')#, vmin=0, vmax=65535)
             plt.title('NDVI: '+str(lon)+'_'+str(lat)+', '+str(date), fontsize=20)
             cb = plt.colorbar()
@@ -386,6 +494,10 @@ def tile_function(dltile,makePlots=False):
             plt.savefig(wd+'figures/'+country+'/'+str(lon)+'_'+str(lat)+'/ndvi_'+str(date)+'_'+str(k)+'.pdf')
             plt.clf() 
             
+	#for v in range(pixels):
+	#    for h in range(pixels):
+	#	if arrNDVI[	
+
         ndviAll[:,:,k]=np.ma.masked_array(arrNDVI[:,:,0],Mask[:,:,k])
         globals().update(locals())
 	
@@ -448,19 +560,16 @@ def tile_function(dltile,makePlots=False):
             continue
           
         greenM=np.ma.masked_array(green[:,:,0],Mask[:,:,k])
-     
+
         for v in range(pixels):
             for h in range(pixels):
-               # if oceanMask[v,h]==True:
-               #     continue
-                ndwiAll[v,h,k] = (greenM[v,h]-nirM[v,h])/(nirM[v,h]+greenM[v,h]+1e-9)
-        #                ndwiAll[v,h,k] = np.clip(128.*(ndwiAll[v,h,k]+1), 0, 255).astype('uint8') shift range from [-1,1] to (0,255)
+        	ndwiAll[v,h] = (green[v,h,0]-nir[v,h,0])/(nir[v,h,0]+green[v,h,0]+1e-9)
         
         if makePlots:
             #masked_cloud = np.ma.masked_array(arrCloud[:, :, 0], maskforCloud)
-            masked_cloud = ndwiAll[:, :, k]
+            masked_ndwi = np.ma.masked_array(ndwiTemp[:,:], maskforCloud)
             plt.figure(figsize=[16,16])
-            plt.imshow(ndwiAll[:,:,k], cmap='jet', vmin=-1, vmax=1)
+            plt.imshow(ndwiTemp[:,:], cmap='jet', vmin=-1, vmax=1)
             plt.title('NDWI: '+str(lon)+'_'+str(lat)+', '+str(date), fontsize=20)
             cb = plt.colorbar()
             cb.set_label("NDWI")
@@ -469,82 +578,104 @@ def tile_function(dltile,makePlots=False):
         
         globals().update(locals())
         
+	###############################################
+        # Visual
+        ###############################################
+        ids = [f['id'] for f in images['features']]
+
+        arr, meta = dl.raster.ndarray(
+                scene,
+                resolution=dltile['properties']['resolution'],
+                bounds=dltile['properties']['outputBounds'],
+                srs=dltile['properties']['cs_code'],
+                bands=['red', 'green', 'blue', 'alpha'],
+                scales=[[0,4000], [0, 4000], [0, 4000], None],
+                data_type='Byte',
+                )
+
+	if makePlots:
+            plt.figure(figsize=[16,16])
+            plt.imshow(arr)
+            plt.title('visual')
+            plt.savefig(wd+'figures/'+country+'/'+str(lon)+'_'+str(lat)+'/visual_'+str(date)+'_'+str(k)+'.pdf')
+
+
         ############################
         # Variables for Histogram  #
         ############################
-        ndviRavel=arrNDVI[:,:,0].ravel()
-        #        cloudRavel=arrCloud[:,:,0].ravel()
-        MaskRavel=Mask[:,:,0].ravel()
-        
-        #        cloud_mask=cloudRavel != 0
-        ndviWithMask=np.ma.masked_array(ndviRavel, MaskRavel)
-        hist,edges=np.histogram(ndviWithMask,bins=np.arange(-1.,1.01,.05))
-        ndviHist[:,k]=hist
-        ndviAvg[k]=np.mean(ndviWithMask)
-        ndviMed[k]=np.median(ndviWithMask)
+        #ndviRavel=arrNDVI[:,:,0].ravel()
+        ##        cloudRavel=arrCloud[:,:,0].ravel()
+        #MaskRavel=Mask[:,:,0].ravel()
+        #
+        ##        cloud_mask=cloudRavel != 0
+        #ndviWithMask=np.ma.masked_array(ndviRavel, MaskRavel)
+        #hist,edges=np.histogram(ndviWithMask,bins=np.arange(-1.,1.01,.05))
+        #ndviHist[:,k]=hist
+        #ndviAvg[k]=np.mean(ndviWithMask)
+        #ndviMed[k]=np.median(ndviWithMask)
         ############################    
-	if k>=20:
-		exit()
     
     #return ndviAll,cloudAll,ndviHist,ndviAvg,plotYear,k
 
+        #                ndwiAll[v,h,k] = np.clip(128.*(ndwiAll[v,h,k]+1), 0, 255).astype('uint8') shift range from [-1,1] to (0,255)
+ 
     
-#    if makePlots:
-#        plt.clf()
-#        for v in range(pixels):
-#            for h in range(pixels):
-#                plt.figure(1)
-#                ndviWithMask = np.ma.masked_array(ndviAll[v,h], Mask[v,h])
-#                plt.plot(plotYear,ndviWithMask,'.', color=(float(h)/float(pixels), 0.5, float(v)/float(pixels)))
-#                plt.ylim([-1.,1,])
-#                plt.xlabel('year')
-#                plt.ylabel('ndvi')
-#                plt.title('ndvi 2016 pixel '+str(v)+'_'+str(h))
-#                plt.savefig(wd+'figures/'+country+'/'+str(lon)+'_'+str(lat)+'/cloud_masked_'+str(v)+'_'+str(h)+'.pdf')
-#                plt.clf() 
-    
-    plt.clf()    
-    plotYeartwoD=np.zeros(shape=(40,k))
-    yvalue=np.zeros(shape=(40,k))
-    for d in range(k):
-        for v in range(40):
-            plotYeartwoD[v,d]=plotYear[d]
-            yvalue[v,d]=edges[v]
-    
-    
-    
+##    if makePlots:
+##        plt.clf()
+##        for v in range(pixels):
+##            for h in range(pixels):
+##                plt.figure(1)
+##                ndviWithMask = np.ma.masked_array(ndviAll[v,h], Mask[v,h])
+##                plt.plot(plotYear,ndviWithMask,'.', color=(float(h)/float(pixels), 0.5, float(v)/float(pixels)))
+##                plt.ylim([-1.,1,])
+##                plt.xlabel('year')
+##                plt.ylabel('ndvi')
+##                plt.title('ndvi 2016 pixel '+str(v)+'_'+str(h))
+##                plt.savefig(wd+'figures/'+country+'/'+str(lon)+'_'+str(lat)+'/cloud_masked_'+str(v)+'_'+str(h)+'.pdf')
+##                plt.clf() 
+#    
+#    plt.clf()    
+#    plotYeartwoD=np.zeros(shape=(40,k))
+#    yvalue=np.zeros(shape=(40,k))
+#    for d in range(k):
+#        for v in range(40):
+#            plotYeartwoD[v,d]=plotYear[d]
+#            yvalue[v,d]=edges[v]
+#    
+#    
+#    
 #        rollingmed=rolling_median(ndviAvg[0:k],10)
 #    rollingmed=rolling_median(ndviMed[0:k],10)
-    
-    x2=plotYear[0:k]
-#    ydata2=ndviAvg[0:k]
-    ydata2=ndviMed[0:k]
-    yfit2=movingaverage(ydata2,16)
-    
-    plt.clf()
-    plt.figure(1)
-    plt.contourf(plotYeartwoD[:,0:k],yvalue[:,0:k],ndviHist[:,0:k],100,cmap=plt.cm.gist_stern_r,levels=np.arange(0,5000,10))    
-    plt.colorbar()
-    plt.plot(x2[2:k-2],yfit2[2:k-2],'.k',linewidth=1)
-    #plt.plot(plotYeartwoD[0,0:k],ndviAvg[0:k],'*',color='k')
-    plt.title('NDVI 2016 '+str(lon)+'_'+str(lat))
-    plt.xlabel('date')
-    plt.ylabel('ndvi')
-    plt.ylim(-1,1)
-    plt.savefig(wd+'figures/'+country+'/'+str(lon)+'_'+str(lat)+'/_heatmap.pdf')
-    plt.clf()
-    
-#        plt.plot(x2[2:k-2],yfit2[2:k-2],'.k',linewidth=1)
-#        plt.title('NDVI 2016 '+str(lon)+'_'+str(lat))
-#        plt.ylim(-1,1)
-#        plt.xlabel('date')
-#        plt.ylabel('ndvi')
-#        plt.savefig(wd+'test_fig'+'_avgline.pdf')
-#        plt.clf()
-#        
-#        plt.plot(rollingmed[2:])
-#        plt.ylim(-1,1)
-#        plt.savefig(wd+'test_fig'+'_rolling_max.pdf')
+#    
+#    x2=plotYear[0:k]
+##    ydata2=ndviAvg[0:k]
+#    ydata2=ndviMed[0:k]
+#    yfit2=movingaverage(ydata2,16)
+#    
+#    plt.clf()
+#    plt.figure(1)
+#    plt.contourf(plotYeartwoD[:,0:k],yvalue[:,0:k],ndviHist[:,0:k],100,cmap=plt.cm.gist_stern_r,levels=np.arange(0,5000,10))    
+#    plt.colorbar()
+#    plt.plot(x2[2:k-2],yfit2[2:k-2],'.k',linewidth=1)
+#    #plt.plot(plotYeartwoD[0,0:k],ndviAvg[0:k],'*',color='k')
+#    plt.title('NDVI 2016 '+str(lon)+'_'+str(lat))
+#    plt.xlabel('date')
+#    plt.ylabel('ndvi')
+#    plt.ylim(-1,1)
+#    plt.savefig(wd+'figures/'+country+'/'+str(lon)+'_'+str(lat)+'/_heatmap.pdf')
+#    plt.clf()
+#    
+##        plt.plot(x2[2:k-2],yfit2[2:k-2],'.k',linewidth=1)
+##        plt.title('NDVI 2016 '+str(lon)+'_'+str(lat))
+##        plt.ylim(-1,1)
+##        plt.xlabel('date')
+##        plt.ylabel('ndvi')
+##        plt.savefig(wd+'test_fig'+'_avgline.pdf')
+##        plt.clf()
+##        
+##        plt.plot(rollingmed[2:])
+##        plt.ylim(-1,1)
+##        plt.savefig(wd+'test_fig'+'_rolling_max.pdf')
     globals().update(locals())
 
     ########################
@@ -557,7 +688,7 @@ def tile_function(dltile,makePlots=False):
              
     np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/ndwiAll',ndwiAll) 
     np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/Mask',Mask)
-#    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/oceanMask',oceanMask)
+    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/oceanMask',oceanMask)
     np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/plotYear',plotYear)
 ##    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/ndviHist',ndviHist)
 ##    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/ndviAvg',ndviAvg)
@@ -572,10 +703,10 @@ def tile_function(dltile,makePlots=False):
     ### Upload files to bucket
     ### Delete files
     
-for tile in range(len(dltiles['features'])):
-    tile=2
-    dltile=dltiles['features'][tile]
-    tile_function(dltile,makePlots)   
+#for tile in range(len(dltiles['features'])):
+#    dltile=dltiles['features'][tile]
+#    print len(dltiles['features'])
+tile_function(dltile,makePlots)   
     
     
 #for i in range(len(dltiles['features'])):
