@@ -22,6 +22,9 @@ cases=np.zeros(shape=(988))
 year=np.zeros(shape=(988))
 month=np.zeros(shape=(988))
 day=np.zeros(shape=(988))
+dayOfYear=np.zeros(shape=(988))
+plotYear=np.zeros(shape=(988))
+xtime=[]
 i=-2
 for line in f:
 	i+=1
@@ -30,12 +33,23 @@ for line in f:
 
 	line=line.replace('"','')
 	tmp=line.split(',')
-	year[i]=float(tmp[2][0:4])
-	month[i]=float(tmp[2][5:7])
-	day[i]=float(tmp[2][8:10])
 	week[i]=float(tmp[1])
 	cases[i]=float(tmp[9])
+	
+	xtime.append(str(tmp[2]))
+        date=xtime[i]
+        year[i]=xtime[i][0:4]
+        month[i]=xtime[i][5:7]
+        day[i]=xtime[i][8:10]
+        dayOfYear[i]=(float(month[i])-1)*30+float(day[i])
+        plotYear[i]=year[i]+dayOfYear[i]/365.0	
 
-
-plt.plot(cases)
+plt.clf()
+plt.plot(plotYear,cases,'b')
 plt.savefig(wd+'figures/dengue_cases')
+
+
+
+
+
+
