@@ -10,6 +10,7 @@ from sklearn import svm
 import time
 from sklearn.preprocessing import StandardScaler
 from celery import Celery
+from scipy import ndimage
 
 ####################
 # Function         #
@@ -72,6 +73,95 @@ def mask_water(image):
     oceanMask = oceanMask.reshape(shape)
     oceanMask = oceanMask[:,:,0]
     return c, oceanMask
+
+def ltk_cloud_mask(X, get_rgb=False):
+    #
+    #   Modified Luo et al. (2008) LTK scheme (Oreopoulos et al. 2011)
+    #   https://landsat.usgs.gov/documents/Oreopoulos_cloud.pdf
+    #
+    #    inputs:
+    #    X       6-band landsat images : VIS/NIR/SWIR bands[1,2,3,4,5,7] in top-of-atmosphere reflectance
+    #
+    #    output:
+    #    Y       byte-valued cloud/snow/water/shadow mask
+    #    vals:   (based on official NASA LTK cloud mask labels)
+    #    1       land
+    #    2       snow
+    #    3       water bodies
+    #    4       clouds
+    #    5       vegetation
+    #
+
+    L1 = X[:,:,0]
+    L3 = X[:,:,1]
+    L4 = X[:,:,2]
+    L5 = X[:,:,3]
+
+    Y = np.zeros(L1.shape, dtype='uint8')
+
+    # stage 1 : non-vegetated land
+    #
+    indexA = (L1 < L3)
+    indexA = np.logical_and(indexA, (L3 < L4))
+    indexA = np.logical_and(indexA, (L4 < np.multiply(L5, 1.07)))
+    indexA = np.logical_and(indexA, (L5 < 0.65))
+
+    indexB = (np.multiply(L1, 0.8) < L3)
+    indexB = np.logical_and(indexB, (L3 < np.multiply(L4, 0.8)))
+    indexB = np.logical_and(indexB, (L4 < L5))
+    indexB = np.logical_and(indexB, (L3 < 0.22))
+
+    index = np.logical_and((Y == 0), np.logical_or(indexA, indexB))
+    Y[index] = 1  # non-vegetated lands
+
+    # stage 2 : snow/ice
+    #
+    indexA = (L3 >= 0.24)
+    indexA = np.logical_and(indexA, (L5 < 0.16))
+    indexA = np.logical_and(indexA, (L3 > L4))
+
+    indexB = (L3 > 0.18)
+    indexB = np.logical_and(indexB, (L3 < 0.24))
+    indexB = np.logical_and(indexB, (L5 < np.subtract(L3, 0.08)))
+    indexB = np.logical_and(indexB, (L3 > L4))
+
+    index = np.logical_and((Y == 0), np.logical_or(indexA, indexB))
+    Y[index] = 2  # snow/ice
+
+    # stage 3 : water bodies
+    #
+    indexA = (L3 > L4)
+    indexA = np.logical_and(indexA, (L3 > np.multiply(L5, 0.67)))
+    indexA = np.logical_and(indexA, (L1 < 0.30))
+    indexA = np.logical_and(indexA, (L3 < 0.20))
+
+    indexB = (L3 > np.multiply(L4, 0.8))
+    indexA = np.logical_and(indexA, (L3 > np.multiply(L5, 0.67)))
+    indexB = np.logical_and(indexB, (L3 < 0.06))
+
+    index = np.logical_and((Y == 0), np.logical_or(indexA, indexB))
+    Y[index] = 3  # water bodies
+
+    # stage 4 : clouds
+    #
+    index = np.logical_or((L1 > 0.28), (L3 > 0.30))
+    index = np.logical_and(index, (L5 > 0.25))
+    index = np.logical_and(index, (np.maximum(L1, L3) > np.multiply(L5, 0.90)))
+
+    index = np.logical_and((Y == 0), index)
+    Y[index] = 4  # clouds
+
+    # stage 5 : vegetation
+    #
+    Y[(Y == 0)] = 5  # vegetation
+
+    #
+    if get_rgb:
+        rgb = rgb_clouds(Y)
+        return Y, rgb
+    #
+    globals().update(())
+    return Y
 ####################        
 
 #celery = Celery('compute_ndvi_forCloud', broker='redis://localhost:6379/0')
@@ -91,7 +181,7 @@ start='1990-01-01'
 end='2016-12-31'
 nyears=16
 country='Puerto_Rico'
-makePlots=True
+makePlots=False
 padding = 16
 pixels = vlen+2*padding
 res = 30
@@ -146,7 +236,7 @@ def tile_function(dltile,makePlots=False):
     
     lon=dltile['geometry']['coordinates'][0][0][0]
     lat=dltile['geometry']['coordinates'][0][0][1]
-    globals().update(locals())
+    globals().update(())
     print lon
     print lat
     latsave=str(lat)
@@ -158,8 +248,7 @@ def tile_function(dltile,makePlots=False):
     #print 'dltile: '+str(tile)+' of '+str(len(dltiles['features']))
     
 
-    oceanMask=np.zeros(shape=(pixels,pixels))
-    oceanMask[0:500,:]=1
+    #oceanMask=np.zeros(shape=(pixels,pixels))
 
     images = dl.metadata.search(
 	products='landsat:LT05:PRE:TOAR',
@@ -175,7 +264,7 @@ def tile_function(dltile,makePlots=False):
     avail_bands = dl.raster.get_bands_by_constellation("L5").keys()
     print avail_bands 
     
-    band_info=dl.metadata.bands(products='landsat:LT05:PRE:TOAR')[-1]
+    band_info=dl.metadata.bands(products='landsat:LT05:PRE:TOAR')
 
     dayOfYear=np.zeros(shape=(n_images))
     year=np.zeros(shape=(n_images),dtype=int)
@@ -208,7 +297,6 @@ def tile_function(dltile,makePlots=False):
     print pixels
     ndviAll=-9999*np.ones(shape=(pixels,pixels,n_images))
     ndwiAll=np.zeros(shape=(pixels,pixels,n_images))
-    #cloudAll=-9999*np.ones(shape=(pixels,pixels,n_images)) 
     Mask=np.ones(shape=(pixels,pixels,n_images),dtype=bool) 
     dayOfYear=np.zeros(shape=(n_images))
     year=np.zeros(shape=(n_images))
@@ -226,7 +314,6 @@ def tile_function(dltile,makePlots=False):
     ####################
     k=-1
     for j in range(len(indexSorted)):
-#    for j in range(10):
         # get the scene id
         scene = images['features'][indexSorted[j]]['key']
        # ###############################################
@@ -255,21 +342,80 @@ def tile_function(dltile,makePlots=False):
         #######################
         # Get cloud data      #
         #######################
+        findCloud=-9999*np.ones(shape=(pixels,pixels,4)) 
+        cloudMask=-9999*np.ones(shape=(pixels,pixels)) 
         try:
-            default_range = band_info['default_range']
-            data_range = band_info['data_range']
-            arrCloud, meta = dl.raster.ndarray(
+            default_range = band_info[2]['default_range']
+            data_range = band_info[2]['physical_range']
+            blue, meta = dl.raster.ndarray(
                 scene,
                 resolution=dltile['properties']['resolution'],
                 bounds=dltile['properties']['outputBounds'],
                 srs=dltile['properties']['cs_code'],
-                bands=['visual_cloud_mask', 'alpha'],
-                scales=[[default_range[0], default_range[1]]],
+                bands=['blue', 'alpha'],
+                scales=[[default_range[0], default_range[1], data_range[0], data_range[1]]],
                 data_type='Float32'
                 )
         except:
-            print('cloud: %s could not be retreived' % scene)
+            print('blue: %s could not be retreived' % scene)
             continue 
+
+        try:
+            default_range = band_info[1]['default_range']
+            data_range = band_info[1]['physical_range']
+            red, meta = dl.raster.ndarray(
+                scene,
+                resolution=dltile['properties']['resolution'],
+                bounds=dltile['properties']['outputBounds'],
+                srs=dltile['properties']['cs_code'],
+                bands=['red', 'alpha'],
+                scales=[[default_range[0], default_range[1], data_range[0], data_range[1]]],
+                data_type='Float32'
+                )
+        except:
+            print('red: %s could not be retreived' % scene)
+            continue 
+
+        try:
+            default_range = band_info[3]['default_range']
+            data_range = band_info[3]['physical_range']
+            nir, meta = dl.raster.ndarray(
+                scene,
+                resolution=dltile['properties']['resolution'],
+                bounds=dltile['properties']['outputBounds'],
+                srs=dltile['properties']['cs_code'],
+                bands=['nir', 'alpha'],
+                scales=[[default_range[0], default_range[1], data_range[0], data_range[1]]],
+                data_type='Float32'
+                )
+        except:
+            print('nir: %s could not be retreived' % scene)
+            continue
+        
+        try:
+            default_range = band_info[5]['default_range']
+            data_range = band_info[5]['physical_range']
+            swir1, meta = dl.raster.ndarray(
+                scene,
+                resolution=dltile['properties']['resolution'],
+                bounds=dltile['properties']['outputBounds'],
+                srs=dltile['properties']['cs_code'],
+                bands=['swir1', 'alpha'],
+                scales=[[default_range[0], default_range[1], data_range[0], data_range[1]]],
+                data_type='Float32'
+                )
+        except:
+            print('swir1: %s could not be retreived' % scene)
+            continue 
+
+	findCloud[:,:,0]=blue[:,:,0]
+	findCloud[:,:,1]=red[:,:,0]
+	findCloud[:,:,2]=nir[:,:,0]
+	findCloud[:,:,3]=swir1[:,:,0]
+
+	cloudMask[:,:]=ltk_cloud_mask(findCloud)
+        globals().update(locals())
+
         #######################
         
         ###############################################
@@ -277,16 +423,16 @@ def tile_function(dltile,makePlots=False):
         ############################################### 
     
         #take out days without data 
-        if arrCloud.shape == ()==True:
-            continue
-        maskforCloud = arrCloud[:, :, 1] != 0 # False=Good, True=Bad
-        if np.sum(maskforCloud)==0:
+        #if arrCloud.shape == ()==True:
+        #    continue
+        #maskforCloud = arrCloud[:, :, 1] != 0 # False=Good, True=Bad
+        if np.sum(cloudMask)==0:
             print 'continued'
             continue
 
         # take out days with too many clouds
-        maskforCloud = arrCloud[:, :, 0] == 0 # True=good False=bad
-        if np.sum(maskforCloud)<0.15*(pixels*pixels):
+        #cloudMask = arrCloud[:, :, 0] == 0 # True=good False=bad
+        if np.sum(cloudMask)<0.15*(pixels*pixels):
             print 'clouds: continued'
             continue        
         k+=1
@@ -310,17 +456,30 @@ def tile_function(dltile,makePlots=False):
     
         print date, k
         sys.stdout.flush()
-        maskforCloud = arrCloud[:, :, 0] != 0 
-        #maskforCloud = arrCloud[:, :, 1] == 0 #for desert
-        maskforAlpha = arrCloud[:, :, 1] == 0 
+        #cloudMask = arrCloud[:, :, 0] != 0 
+        #cloudMask = arrCloud[:, :, 1] == 0 #for desert
+        maskforAlpha = blue[:, :, 1] == 0 
         
+	swap = {5:0,4:1,1:0,2:0,3:0,0:1}
+	for v in range(pixels):
+            for h in range(pixels):
+		if cloudMask[v,h]==3 and v<600:
+		    cloudMask[v,h]=1
+		else:
+                    cloudMask[v,h]=swap[cloudMask[v,h]]
+
         for v in range(pixels):
             for h in range(pixels):
-                if maskforCloud[v,h]==0 and maskforAlpha[v,h]==0 and oceanMask[v,h]==0:
+                if cloudMask[v,h]==0 and maskforAlpha[v,h]==0: # and oceanMask[v,h]==0:
                     Mask[v,h,k]=0
         
-	Mask[:,:,k]=ndimage.binary_dilation(Mask[:,:,k],iterations=6)
+	#Mask[:,:,k]=1-Mask[:,:,k]
+	#Mask[:,:,k]=ndimage.binary_dilation(Mask[:,:,k],iterations=3)
+	#Mask[:,:,k]=1-Mask[:,:,k]
 
+	#cloudMask[:,:,k]=1-cloudMask[:,:,k]
+	#cloudMask[:,:,k]=ndimage.binary_dilation(Mask[:,:,k],iterations=3)
+	#cloudMask[:,:,k]=1-cloudMask[:,:,k]
        # if makePlots:
        #     
 
@@ -346,41 +505,23 @@ def tile_function(dltile,makePlots=False):
         ###############################################
             
         if makePlots:
-            masked_cloud = np.ma.masked_array(arrCloud[:, :, 0], Mask[:,:,k])
             plt.figure(figsize=[16,16])
-            plt.imshow(masked_cloud, cmap='gray', vmin=0, vmax=1)
+            plt.imshow(cloudMask, cmap='gray', vmin=0, vmax=1)
             plt.title('Cloud: '+str(lon)+'_'+str(lat)+', '+str(date), fontsize=20)
             cb = plt.colorbar()
             cb.set_label("Cloud")
             plt.savefig(wd+'figures/'+country+'/'+str(lon)+'_'+str(lat)+'/cloud_'+str(date)+'_'+str(k)+'.pdf')
             plt.clf()
             
-        
         ###############################################
         # NDWI
         ###############################################
         
-        try:
-            default_range = band_info['default_range']
-            data_range = band_info['data_range']
-            nir, meta = dl.raster.ndarray(
-                scene,
-                resolution=dltile['properties']['resolution'],
-                bounds=dltile['properties']['outputBounds'],
-                srs=dltile['properties']['cs_code'],
-                bands=['nir', 'alpha'],
-                scales=[[default_range[0], default_range[1], data_range[0], data_range[1]]],
-                data_type='Float32'
-                )
-        except:
-            print('nir: %s could not be retreived' % scene)
-            continue
-        
         nirM=np.ma.masked_array(nir[:,:,0],Mask[:,:,k])
         
         try:
-            default_range = band_info['default_range']
-            data_range = band_info['data_range']
+            default_range = band_info[4]['default_range']
+            data_range = band_info[4]['physical_range']
             green, meta = dl.raster.ndarray(
                 scene,
                 resolution=dltile['properties']['resolution'],
@@ -399,7 +540,7 @@ def tile_function(dltile,makePlots=False):
         for v in range(pixels):
             for h in range(pixels):
         	ndwiAll[v,h] = (green[v,h,0]-nir[v,h,0])/(nir[v,h,0]+green[v,h,0]+1e-9)
-        
+
         if makePlots:
             masked_ndwi = np.ma.masked_array(ndwiAll[:,:,k], Mask[:,:,k])
             plt.figure(figsize=[16,16])
@@ -433,8 +574,6 @@ def tile_function(dltile,makePlots=False):
             plt.title('visual')
             plt.savefig(wd+'figures/'+country+'/'+str(lon)+'_'+str(lat)+'/visual_'+str(date)+'_'+str(k)+'.pdf')
 
-	if k==2:
-	    exit()
 
 	###############################################
         # Find number of standing water bodies 
@@ -515,7 +654,7 @@ def tile_function(dltile,makePlots=False):
              
     np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/ndwiAll',ndwiAll) 
     np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/Mask',Mask)
-    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/oceanMask',oceanMask)
+#    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/oceanMask',oceanMask)
     np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/plotYear',plotYear)
 ##    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/ndviHist',ndviHist)
 ##    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/ndviAvg',ndviAvg)
