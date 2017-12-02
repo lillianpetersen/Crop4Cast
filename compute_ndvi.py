@@ -144,9 +144,9 @@ def ltk_cloud_mask(X, get_rgb=False):
 
     # stage 4 : clouds
     #
-    index = np.logical_or((L1 > 0.28), (L3 > 0.30))
-    index = np.logical_and(index, (L5 > 0.25))
-    index = np.logical_and(index, (np.maximum(L1, L3) > np.multiply(L5, 0.90)))
+    index = np.logical_or((L1 > 0.25), (L3 > 0.27))
+    index = np.logical_and(index, (L5 > 0.22))
+    index = np.logical_and(index, (np.maximum(L1, L3) > np.multiply(L5, 0.87)))
 
     index = np.logical_and((Y == 0), index)
     Y[index] = 4  # clouds
@@ -172,19 +172,18 @@ wd='/Users/lilllianpetersen/Google Drive/science_fair/'
 
 # Celery task goes into start-up script
 
-vlen=2016
-hlen=2016
-#vlen=994
-#hlen=994
+vlen=992
+hlen=992
 start='1990-01-01'
-#start='2001-07-01'
 end='2016-12-31'
 nyears=16
-country='Puerto_Rico'
-makePlots=False
+#country='Puerto_Rico'
+country='Ethiopia'
+makePlots=True
 padding = 16
 pixels = vlen+2*padding
-res = 30
+#res = 30
+res=120
 
 #vlen=100
 #hlen=100
@@ -195,26 +194,25 @@ res = 30
 
 #matches=dl.places.find('united-states_washington')
 #matches=dl.places.find('north-america_united-states')
-#matches=dl.places.find('south-america_brazil_rondonia')
 #matches=dl.places.find('united-states_iowa')
+#matches=dl.places.find('puerto-rico_san-juan')
 
-matches=dl.places.find('puerto-rico_san-juan')
+matches=dl.places.find('africa_ethiopia')
 aoi = matches[0]
 shape = dl.places.shape(aoi['slug'], geom='low')
 
-#dltiles = dl.raster.dltiles_from_shape(res, pixels, padding, shape)
-dltile=dl.raster.dltile_from_latlon(18.3,-66,res,vlen,padding)
+dltiles = dl.raster.dltiles_from_shape(res, vlen, padding, shape)
+#dltile=dl.raster.dltile_from_latlon(18.3,-66,res,vlen,padding)
 #lonlist=np.zeros(shape=(len(dltiles['features'])))
 #latlist=np.zeros(shape=(len(dltiles['features'])))
-
 #for i in range(len(dltiles['features'])):
 #    lonlist[i]=dltiles['features'][i]['geometry']['coordinates'][0][0][0]
 #    latlist[i]=dltiles['features'][i]['geometry']['coordinates'][0][0][1]
 
 #features=np.zeros(shape=(len(dltiles),nyears,pixels*pixels,6))
 #target=np.zeros(shape=(len(dltiles),nyears,pixels*pixels))
-features=np.zeros(shape=(len(dltile),nyears,pixels*pixels,6))
-target=np.zeros(shape=(len(dltile),nyears,pixels*pixels))
+#features=np.zeros(shape=(len(dltile),nyears,pixels*pixels,6))
+#target=np.zeros(shape=(len(dltile),nyears,pixels*pixels))
 
 #@celery.task  
 def tile_function(dltile,makePlots=False):
@@ -251,7 +249,8 @@ def tile_function(dltile,makePlots=False):
     #oceanMask=np.zeros(shape=(pixels,pixels))
 
     images = dl.metadata.search(
-	products='landsat:LT05:PRE:TOAR',
+	#products='landsat:LT05:PRE:TOAR',
+	products='modis:09:CREFL',
         start_time=start,
         end_time=end,
         geom=dltile['geometry'],
@@ -264,7 +263,8 @@ def tile_function(dltile,makePlots=False):
     avail_bands = dl.raster.get_bands_by_constellation("L5").keys()
     print avail_bands 
     
-    band_info=dl.metadata.bands(products='landsat:LT05:PRE:TOAR')
+    #band_info=dl.metadata.bands(products='landsat:LT05:PRE:TOAR')
+    band_info=dl.metadata.bands(products='modis:09:CREFL')
 
     dayOfYear=np.zeros(shape=(n_images))
     year=np.zeros(shape=(n_images),dtype=int)
@@ -279,8 +279,8 @@ def tile_function(dltile,makePlots=False):
         # get the scene id
         scene = feature['id']
             
-        #xtime.append(str(images['features'][i]['id'][20:30]))
-	xtime.append(str(images['features'][i]['properties']['acquired'][0:10]))
+        xtime.append(str(images['features'][i]['id'][20:30]))
+	#xtime.append(str(images['features'][i]['properties']['acquired'][0:10]))
         date=xtime[i]
         year[i]=xtime[i][0:4]
         month[i]=xtime[i][5:7]
@@ -408,6 +408,7 @@ def tile_function(dltile,makePlots=False):
             print('swir1: %s could not be retreived' % scene)
             continue 
 
+        globals().update(locals())
 	findCloud[:,:,0]=blue[:,:,0]
 	findCloud[:,:,1]=red[:,:,0]
 	findCloud[:,:,2]=nir[:,:,0]
@@ -430,10 +431,18 @@ def tile_function(dltile,makePlots=False):
             print 'continued'
             continue
 
+	swap = {5:0,4:1,1:0,2:0,3:0,0:1}
+	for v in range(pixels):
+            for h in range(pixels):
+		#if cloudMask[v,h]==3 and v<600:
+		#    cloudMask[v,h]=1
+		#else:
+                cloudMask[v,h]=swap[cloudMask[v,h]]
+
         # take out days with too many clouds
         #cloudMask = arrCloud[:, :, 0] == 0 # True=good False=bad
-        if np.sum(cloudMask)<0.15*(pixels*pixels):
-            print 'clouds: continued'
+        if np.sum(cloudMask)>0.85*(pixels*pixels):
+            print 'clouds: continued', np.round(np.sum(cloudMask)/(pixels*pixels),3)
             continue        
         k+=1
         
@@ -441,8 +450,8 @@ def tile_function(dltile,makePlots=False):
         # time
         ############################################### 
         
-        #xtime.append(str(images['features'][indexSorted[j]]['id'][20:30]))
-	xtime.append(str(images['features'][k]['properties']['acquired'][0:10]))
+        xtime.append(str(images['features'][indexSorted[j]]['id'][20:30]))
+	#xtime.append(str(images['features'][j]['properties']['acquired'][0:10]))
         date=xtime[k]
         year[k]=xtime[k][0:4]
         month[k]=xtime[k][5:7]
@@ -454,19 +463,12 @@ def tile_function(dltile,makePlots=False):
         # Back to NDVI
         ############################################### 
     
-        print date, k
+        print date, k, np.round(np.sum(cloudMask)/(pixels*pixels),3)
         sys.stdout.flush()
         #cloudMask = arrCloud[:, :, 0] != 0 
         #cloudMask = arrCloud[:, :, 1] == 0 #for desert
         maskforAlpha = blue[:, :, 1] == 0 
         
-	swap = {5:0,4:1,1:0,2:0,3:0,0:1}
-	for v in range(pixels):
-            for h in range(pixels):
-		if cloudMask[v,h]==3 and v<600:
-		    cloudMask[v,h]=1
-		else:
-                    cloudMask[v,h]=swap[cloudMask[v,h]]
 
         for v in range(pixels):
             for h in range(pixels):
@@ -503,7 +505,9 @@ def tile_function(dltile,makePlots=False):
         ###############################################
         # Cloud
         ###############################################
-            
+	if not os.path.exists(wd+'figures/'+country+'/'+str(lon)+'_'+str(lat)):
+            os.makedirs(wd+'figures/'+country+'/'+str(lon)+'_'+str(lat))
+
         if makePlots:
             plt.figure(figsize=[16,16])
             plt.imshow(cloudMask, cmap='gray', vmin=0, vmax=1)
@@ -539,7 +543,9 @@ def tile_function(dltile,makePlots=False):
 
         for v in range(pixels):
             for h in range(pixels):
-        	ndwiAll[v,h] = (green[v,h,0]-nir[v,h,0])/(nir[v,h,0]+green[v,h,0]+1e-9)
+        	ndwiAll[v,h,k] = (green[v,h,0]-nir[v,h,0])/(nir[v,h,0]+green[v,h,0]+1e-9)
+        	#ndwiAll[v,h,k] = (greenM[v,h]-nirM[v,h])/(nirM[v,h]+greenM[v,h]+1e-9)
+        #masked_ndwi = np.ma.masked_array(ndwiAll[:,:,k], Mask[:,:,k])
 
         if makePlots:
             masked_ndwi = np.ma.masked_array(ndwiAll[:,:,k], Mask[:,:,k])
@@ -574,7 +580,8 @@ def tile_function(dltile,makePlots=False):
             plt.title('visual')
             plt.savefig(wd+'figures/'+country+'/'+str(lon)+'_'+str(lat)+'/visual_'+str(date)+'_'+str(k)+'.pdf')
 
-
+	if k==2:
+	    exit()
 	###############################################
         # Find number of standing water bodies 
         ###############################################
@@ -663,14 +670,15 @@ def tile_function(dltile,makePlots=False):
     np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/month',month)
     np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/year',year)
 ##    np.save(wd+'saved_vars/'+country+'/'+str(lon)+'_'+str(lat)+'/edges',edges)
-    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/arrClas',arrClas)
-    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/ndviAll',ndviAll)
+#    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/arrClas',arrClas)
+#    np.save(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/ndviAll',ndviAll)
     
     
-#for tile in range(len(dltiles['features'])):
-#    dltile=dltiles['features'][tile]
-#    print len(dltiles['features'])
-tile_function(dltile,makePlots)   
+for tile in range(len(dltiles['features'])):
+    tile=30
+    dltile=dltiles['features'][tile]
+    print len(dltiles['features'])
+    tile_function(dltile,makePlots)   
     
     
 #for i in range(len(dltiles['features'])):
