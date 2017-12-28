@@ -177,4 +177,4 @@ for y in range(iBeg,iEnd):
 plt.clf()
 
 
-
+np.save(wd+'saved_vars/ethiopia/TempAnomBoxAvg.npy',monthlyData)

@@ -11,8 +11,9 @@ import time
 from sklearn.preprocessing import StandardScaler
 
 wd='/Users/lilllianpetersen/Google Drive/science_fair/'
+wddata='/Users/lilllianpetersen/data/'
 
-f=open(wd+'data/crop_production_ethiopia.csv')
+f=open(wddata+'crop_production_ethiopia.csv')
 
 crops=np.zeros(shape=(57,100,2))
 data=[]
@@ -154,3 +155,12 @@ plt.xlabel('year')
 plt.ylabel('area (millions hectares)')
 plt.grid(True)
 plt.savefig(wd+'/figures/ethiopia/crop_area')
+
+savedCropYield=np.zeros(shape=(116,ncrops))
+savedCropYield[61:115,:]=cropYield
+
+np.save(wd+'saved_vars/ethiopia/production',production)
+np.save(wd+'saved_vars/ethiopia/cropYield',savedCropYield)
+np.save(wd+'saved_vars/ethiopia/areaHarvested',area)
+
+np.save(wd+'saved_vars/ethiopia/cropYieldBoxAvg.npy',cropYield[:,indexSorted[0]])
