@@ -79,6 +79,7 @@ precipAnom=-9999*np.ones(shape=(117,12))
 lat=41.32227845829797
 lon=-84.61415705767553
 ndviAnom=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/ndviAnom.npy')
+eviAnom=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/eviAnom.npy')
 
 #cropYield=np.array([131, 134, 124.1, 155.3, 158.1, 154.2, 145.4, 115.4, 129, 161.3, 140.2, 133, 80.2, 163, 184, 131.6, 163.6])
 cropYield=np.array([131, 134, 124.1, 155.3, 158.1, 154.2, 145.4, 115.4, 129, 161.3, 140.2, 133, 80.2, 163, 184, 131.6])
@@ -89,7 +90,7 @@ iBeg=0
 iEnd=16
 nyears=16
 
-varMask=np.ones(shape=(1,nyears,12))
+varMask=np.ones(shape=(3,nyears,12))
 cropMask=np.ones(shape=(nyears))
 for y in range(iBeg,iEnd):
 	if cropYield[y]>0:
@@ -102,14 +103,20 @@ for y in range(iBeg,iEnd):
 		#	varMask[1,y,m]=0
 			if cropYield[y]>0 and ndviAnom[y,m]>-900:
 				varMask[0,y,m]=0
+			if cropYield[y]>0 and eviAnom[y,m]>-900:
+				varMask[1,y,m]=0
+			#if cropYield[y]>0 and ndwiAnom[y,m]>-900:
+			#	varMask[2,y,m]=0
 			
 
 
 cropYield=np.ma.masked_array(cropYield,cropMask)
 #precipAnom=np.ma.masked_array(precipAnom,varMask[0])
 #tempAnom=np.ma.masked_array(tempAnom,varMask[1])
-ndviAnom=np.ma.masked_array(ndviAnom,varMask[0])
 #elNino=np.ma.masked_array(elNino,elNinoMask)
+ndviAnom=np.ma.masked_array(ndviAnom,varMask[0])
+eviAnom=np.ma.masked_array(eviAnom,varMask[1])
+#ndwiAnom=np.ma.masked_array(ndwiAnom,varMask[2])
 
 ### Plot Yield and NDVI Corr ###
 for m in range(6,9):
@@ -127,9 +134,51 @@ for m in range(6,9):
 	
 	plt.plot(x,ydata,'*b',x,yfit,'g-')
 	plt.title(str(m)+' ndvi and Crop Yield, Corr='+str(round(Corr,2))+' Slope= '+str(round(slope,2)))
+	plt.xlabel('ndvi Anomaly')
+	plt.ylabel('crop yield (bu/acre)')
 	plt.grid(True)
 	plt.savefig(wd+'figures/Ohio/ndvi_yield_corr_'+str(m),dpi=700)
+
+### Plot Yield and EVI Corr ###
+for m in range(6,9):
+	cropYield3=np.ma.masked_array(cropYield,varMask[0,:,m])
+	Corr=corr(np.ma.compressed(eviAnom[:,m]),np.ma.compressed(cropYield3))
+	
+	plt.clf()
+	plt.figure(1,figsize=(7,5))
+	x=np.ma.compressed(eviAnom[:,m])
+	ydata=np.ma.compressed(cropYield3)
+	
+	ydataAvg=np.mean(ydata)
+	slope,bIntercept=np.polyfit(x,ydata,1)
+	yfit=slope*x+bIntercept
+	
+	plt.plot(x,ydata,'*b',x,yfit,'g-')
+	plt.title(str(m)+' evi and Crop Yield, Corr='+str(round(Corr,2))+' Slope= '+str(round(slope,2)))
+	plt.xlabel('evi Anomaly')
+	plt.ylabel('crop yield (bu/acre)')
+	plt.grid(True)
+	plt.savefig(wd+'figures/Ohio/evi_yield_corr_'+str(m),dpi=700)
 exit()
+
+### Plot Yield and NDWI Corr ###
+for m in range(6,9):
+	cropYield3=np.ma.masked_array(cropYield,varMask[0,:,m])
+	Corr=corr(np.ma.compressed(ndwiAnom[:,m]),np.ma.compressed(cropYield3))
+	
+	plt.clf()
+	plt.figure(1,figsize=(7,5))
+	x=np.ma.compressed(ndwiAnom[:,m])
+	ydata=np.ma.compressed(cropYield3)
+	
+	ydataAvg=np.mean(ydata)
+	slope,bIntercept=np.polyfit(x,ydata,1)
+	yfit=slope*x+bIntercept
+	
+	plt.plot(x,ydata,'*b',x,yfit,'g-')
+	plt.title(str(m)+' ndwi and Crop Yield, Corr='+str(round(Corr,2))+' Slope= '+str(round(slope,2)))
+	plt.grid(True)
+	plt.savefig(wd+'figures/Ohio/ndwi_yield_corr_'+str(m),dpi=700)
 
 precipSumGS=-9999*np.ones(shape=(nyears))
 for y in range(iBeg,iEnd):
