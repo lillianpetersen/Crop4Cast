@@ -13,6 +13,8 @@ from operator import and_
 
 wd='/Users/lilllianpetersen/Google Drive/science_fair/'
 wddata='/Users/lilllianpetersen/data/'
+wdvars='/Users/lilllianpetersen/saved_vars/'
+wdfigs='/Users/lilllianpetersen/figures/'
 
 ###############################################
 # Functions
@@ -66,60 +68,213 @@ def corr(x,y):
 	return rxy
 
 
-cropYield=-9999*np.ones(shape=(117))
-precipAnom=-9999*np.ones(shape=(117,12))
-#ndviAnom=-9999*np.ones(shape=(117,12))
-
-#cropYield[61:115]=np.load(wd+'saved_vars/ethiopia/cropYieldBoxAvg.npy')
-#precipAnom[83:117]=np.load(wd+'saved_vars/ethiopia/PrecipAnomBoxAvg.npy')
-#tempAnom=np.load(wd+'saved_vars/ethiopia/TempAnomBoxAvg.npy')
-#elNino=np.load(wd+'saved_vars/ethiopia/elNino.npy')
-#elNinoMask=np.load(wd+'saved_vars/ethiopia/elNinoMask.npy')
-#ndviAnom[113:117]=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/ndviAnom.npy')
-lat=41.32227845829797
-lon=-84.61415705767553
-ndviAnom=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/ndviAnom.npy')
-eviAnom=np.load(wd+'saved_vars/'+str(lon)+'_'+str(lat)+'/eviAnom.npy')
-
-#cropYield=np.array([131, 134, 124.1, 155.3, 158.1, 154.2, 145.4, 115.4, 129, 161.3, 140.2, 133, 80.2, 163, 184, 131.6, 163.6])
-cropYield=np.array([131, 134, 124.1, 155.3, 158.1, 154.2, 145.4, 115.4, 129, 161.3, 140.2, 133, 80.2, 163, 184, 131.6])
-
-
-#tempAnom=tempAnom[20:137]
-iBeg=0
-iEnd=16
 nyears=16
+makePlots=False
 
-varMask=np.ones(shape=(3,nyears,12))
-cropMask=np.ones(shape=(nyears))
-for y in range(iBeg,iEnd):
-	if cropYield[y]>0:
-		cropMask[y]=0
-	for m in range(12):
-		if m>=5 and m<=8:
-		#if cropYield[y]>0 and precipAnom[y,m]>-900:
-		#	varMask[0,y,m]=0
-		#if cropYield[y]>0 and tempAnom[y,m]>-900:
-		#	varMask[1,y,m]=0
-			if cropYield[y]>0 and ndviAnom[y,m]>-900:
-				varMask[0,y,m]=0
-			if cropYield[y]>0 and eviAnom[y,m]>-900:
-				varMask[1,y,m]=0
-			#if cropYield[y]>0 and ndwiAnom[y,m]>-900:
-			#	varMask[2,y,m]=0
-			
+precipAnom=-9999*np.ones(shape=(117,12))
+
+cropYieldAll=np.load(wdvars+'cropYield.npy')
+cropYieldAll=cropYieldAll[:,100:116,0]
+
+countyName=np.load(wdvars+'countyName.npy')
+stateName=np.load(wdvars+'stateName.npy')
+
+ndviAnomAll=np.load(wdvars+'Illinois/ndviAnom.npy')
+eviAnomAll=np.load(wdvars+'Illinois/eviAnom.npy')
+ndwiAnomAll=np.load(wdvars+'Illinois/eviAnom.npy')
+
+countiesMask=np.zeros(shape=(3143),dtype=bool)
+for icounty in range(3143):
+	if np.amax(ndviAnomAll[icounty,:])==0:
+		countiesMask[icounty]=True
+
+icountyIll=-1
+cropYield=np.zeros(shape=(np.sum(1-countiesMask),nyears))
+ndviAnom=np.zeros(shape=(np.sum(1-countiesMask),nyears,12))
+eviAnom=np.zeros(shape=(np.sum(1-countiesMask),nyears,12))
+ndwiAnom=np.zeros(shape=(np.sum(1-countiesMask),nyears,12))
+goodCountiesIndex=np.zeros(shape=(np.sum(1-countiesMask)),dtype=int)
+for icounty in range(3143):
+	if countiesMask[icounty]==False:
+		icountyIll+=1
+		goodCountiesIndex[icountyIll]=icounty
+		cropYield[icountyIll]=cropYieldAll[icounty]
+		ndviAnom[icountyIll]=ndviAnomAll[icounty]
+		eviAnom[icountyIll]=eviAnomAll[icounty]
+		ndwiAnom[icountyIll]=ndwiAnomAll[icounty]
+
+ncounties=icountyIll+1
+yieldMask=np.zeros(shape=(ncounties,nyears))
+anomMask=np.zeros(shape=(ncounties,nyears,12))
+for icounty in range(ncounties):
+	for y in range(nyears):
+		if cropYield[icounty,y]<1:
+			yieldMask[icounty,y]=1
+			anomMask[icounty,y,:]=1
+		if np.amax(ndviAnom[icounty,y])==0:
+			yieldMask[icounty,y]=1
+		for m in range(12):
+			if m<4 or m>7:
+				anomMask[icounty,y,m]=1
+			if ndviAnom[icounty,y,m]==0 or math.isnan(ndviAnom[icounty,y,m])==True or ndviAnom[icounty,y,m]<-90:
+				anomMask[icounty,y,m]=1
 
 
-cropYield=np.ma.masked_array(cropYield,cropMask)
-#precipAnom=np.ma.masked_array(precipAnom,varMask[0])
-#tempAnom=np.ma.masked_array(tempAnom,varMask[1])
-#elNino=np.ma.masked_array(elNino,elNinoMask)
-ndviAnom=np.ma.masked_array(ndviAnom,varMask[0])
-eviAnom=np.ma.masked_array(eviAnom,varMask[1])
-#ndwiAnom=np.ma.masked_array(ndwiAnom,varMask[2])
+#cropYield=np.ma.masked_array(cropYield,yieldMask)
+ndviAnom=np.ma.masked_array(ndviAnom,anomMask)
+eviAnom=np.ma.masked_array(eviAnom,anomMask)
+ndwiAnom=np.ma.masked_array(ndwiAnom,anomMask)
+
+### Detrend the yield data ###
+#cropYieldDet=np.zeros(shape=(cropYield.shape))
+#for icounty in range(ncounties):
+#	cName=countyName[goodCountiesIndex[icounty]].title()
+#	### Plot Normalized Yield ###
+#	x=np.ma.masked_array(np.arange(2000,2016),yieldMask[icounty])
+#	ydata=np.ma.masked_array(cropYield[icounty],yieldMask[icounty])
+#	
+#	xPlot=np.ma.compressed(x)
+#	ydataPlot=np.ma.compressed(ydata)
+#
+#	ydataAvg=np.mean(ydataPlot)
+#	slope,b=np.polyfit(xPlot,ydataPlot,1)
+#	yfit=slope*x+b
+#
+#	if makePlots:
+#		plt.clf()
+#		#figure(1,figsize=(9,4))
+#		plt.plot(x,ydata,'--*b',x,yfit,'g')
+#		plt.ylabel('Yield, Bushels/Acre')
+#		plt.xlabel('year')
+#		plt.title('Yield: '+cName+', slope='+str(round(slope,2))+' Bu/Acre/Year')
+#		plt.grid(True)
+#		plt.savefig(wdfigs+'Illinois/'+cName+'_yield_over_time',dpi=700)
+#		plt.clf()
+#	
+#	num=len(yfit)-1
+#	
+#	cropYieldDet[icounty]=ydata-(slope*x+b)
+#	#cropYieldDet[icounty]=cropYieldDet[icounty]+yfit[num]
+#	
+#	dataAt2015=yfit[num]
+#	
+#	ydata=np.ma.compressed(np.ma.masked_array(cropYieldDet[icounty],yieldMask[icounty]))
+#	x=np.ma.compressed(np.ma.masked_array(x,yieldMask[icounty]))
+#	ydataAvg=np.mean(ydata)
+#	slope,bIntercept=np.polyfit(x,ydata,1)
+#	yfit=slope*x+bIntercept
+#	Corr=corr(x,ydata)
+#	
+#	if makePlots:
+#	    plt.clf()
+#	    #figure(1,figsize=(9,4))
+#	    plt.plot(x,ydata,'*b',x,yfit,'g')
+#	    plt.ylabel('Yield')
+#	    plt.xlabel('year')
+#	    plt.title(cName+' Normalized Corn Yield over time  m='+str(round(slope,3)*100)+' Corr='+str(round(Corr,2)))
+#	    plt.grid(True)
+#	    plt.savefig(wdfigs+'Illinois/'+cName+'_normalized_yield_over_time',dpi=700)
+#	    plt.clf()
+	
+	
+### Plot Yield and NDVI Corr ###
+for m in range(4,8):
+	cropYield1=np.ma.masked_array(cropYield,anomMask[:,:,m])
+	x=np.ma.compressed(cropYield1)
+	ydata=np.ma.compressed(ndviAnom[:,:,m])
+	Corr=corr(x,ydata)
+	
+	plt.clf()
+	plt.figure(1,figsize=(7,5))
+	
+	ydataAvg=np.mean(ydata)
+	slope,bIntercept=np.polyfit(x,ydata,1)
+	yfit=slope*x+bIntercept
+	
+	plt.plot(x,ydata,'*b',x,yfit,'g-')
+	plt.title(str(m+1)+' ndvi and Crop Yield, Corr='+str(round(Corr,2))+' Slope= '+str(round(slope*100,3)))
+	plt.ylabel('ndvi Anomaly')
+	plt.xlabel('crop yield (bu/acre)')
+	plt.grid(True)
+	plt.savefig(wdfigs+'Illinois/ndvi_yield_corr_'+str(m),dpi=700)
+
+
+### Plot Yield and NDVI Corr ###
+for m in range(4,8):
+	cropYield1=np.ma.masked_array(cropYield,anomMask[:,:,m])
+	x=np.ma.compressed(cropYield1)
+	ydata=np.ma.compressed(eviAnom[:,:,m])
+	Corr=corr(x,ydata)
+	
+	plt.clf()
+	plt.figure(1,figsize=(7,5))
+	
+	ydataAvg=np.mean(ydata)
+	slope,bIntercept=np.polyfit(x,ydata,1)
+	yfit=slope*x+bIntercept
+	
+	plt.plot(x,ydata,'*b',x,yfit,'g-')
+	plt.title(str(m+1)+' evi and Crop Yield, Corr='+str(round(Corr,2))+' Slope= '+str(round(slope*100,3)))
+	plt.ylabel('evi Anomaly')
+	plt.xlabel('crop yield (bu/acre)')
+	plt.grid(True)
+	plt.savefig(wdfigs+'Illinois/edvi_yield_corr_'+str(m),dpi=700)
+
+
+### Plot Yield and NDVI Corr ###
+for m in range(4,8):
+	cropYield1=np.ma.masked_array(cropYieldDet,anomMask[:,:,m])
+	x=np.ma.compressed(cropYield1)
+	ydata=np.ma.compressed(ndwiAnom[:,:,m])
+	Corr=corr(x,ydata)
+	
+	plt.clf()
+	plt.figure(1,figsize=(7,5))
+	
+	ydataAvg=np.mean(ydata)
+	slope,bIntercept=np.polyfit(x,ydata,1)
+	yfit=slope*x+bIntercept
+	
+	plt.plot(x,ydata,'*b',x,yfit,'g-')
+	plt.title(str(m+1)+' ndwi and Crop Yield, Corr='+str(round(Corr,2))+' Slope= '+str(round(slope*100,3)))
+	plt.xlabel('ndwi Anomaly')
+	plt.ylabel('crop yield (bu/acre)')
+	plt.grid(True)
+	plt.savefig(wdfigs+'Illinois/ndwi_yield_corr_'+str(m),dpi=700)
+exit()
+
+
+#varMask=np.ones(shape=(3,nyears,12))
+#cropMask=np.ones(shape=(nyears))
+#for y in range(iBeg,iEnd):
+#	if cropYield[y]>0:
+#		cropMask[y]=0
+#	for m in range(12):
+#		if m>=5 and m<=8:
+#		#if cropYield[y]>0 and precipAnom[y,m]>-900:
+#		#	varMask[0,y,m]=0
+#		#if cropYield[y]>0 and tempAnom[y,m]>-900:
+#		#	varMask[1,y,m]=0
+#			if cropYield[y]>0 and ndviAnom[y,m]>-900:
+#				varMask[0,y,m]=0
+#			if cropYield[y]>0 and eviAnom[y,m]>-900:
+#				varMask[1,y,m]=0
+#			#if cropYield[y]>0 and ndwiAnom[y,m]>-900:
+#			#	varMask[2,y,m]=0
+#			
+#
+#
+#cropYield=np.ma.masked_array(cropYield,cropMask)
+##precipAnom=np.ma.masked_array(precipAnom,varMask[0])
+##tempAnom=np.ma.masked_array(tempAnom,varMask[1])
+##elNino=np.ma.masked_array(elNino,elNinoMask)
+#ndviAnom=np.ma.masked_array(ndviAnom,varMask[0])
+#eviAnom=np.ma.masked_array(eviAnom,varMask[1])
+##ndwiAnom=np.ma.masked_array(ndwiAnom,varMask[2])
 
 ### Plot Yield and NDVI Corr ###
 for m in range(6,9):
+	#cropYield3=np.ma.masked_array(cropYield,varMask[0,:,m])
 	cropYield3=np.ma.masked_array(cropYield,varMask[0,:,m])
 	Corr=corr(np.ma.compressed(ndviAnom[:,m]),np.ma.compressed(cropYield3))
 	

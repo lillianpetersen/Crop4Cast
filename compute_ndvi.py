@@ -205,16 +205,17 @@ my_cmap = make_cmap(colors)
 #
 ##wd='gs://lillian-bucket-storage/'
 wd='/Users/lilllianpetersen/Google Drive/science_fair/'
+wdvars='/Users/lilllianpetersen/saved_vars/'
 
-countylats=np.load(wd+'saved_vars/county_lats.npy')
-countylons=np.load(wd+'saved_vars/county_lons.npy')
-countyName=np.load(wd+'saved_vars/countyName.npy')
-stateName=np.load(wd+'saved_vars/stateName.npy')
+countylats=np.load(wdvars+'county_lats.npy')
+countylons=np.load(wdvars+'county_lons.npy')
+countyName=np.load(wdvars+'countyName.npy')
+stateName=np.load(wdvars+'stateName.npy')
 
 # Celery task goes into start-up script
 
-badn='15N'
-goodn='16N'
+badn='16N'
+goodn='15N'
 #vlen=256
 #hlen=256
 start='2000-01-01'
@@ -237,8 +238,8 @@ res=120
 #pixels=vlen+2*padding
 #	
 badarrays=0
-#for icounty in range(len(countylats)):
-for icounty in range(603,len(countylats)):
+for icounty in range(len(countylats)):
+#for icounty in range(670,len(countylats)):
 
 	clat=countylats[icounty]
 	clon=countylons[icounty]
@@ -252,19 +253,12 @@ for icounty in range(603,len(countylats)):
 
 	if sName!='Illinois':
 		continue
-	if clat<38:
-		continue
+
 	print 'good=',goodn
 	#print sName,cName,clat,clon
 	if cNamel=='de-kalb':
 		cNamel='dekalb'
 
-	#matches=dl.places.find('united-states_washington')
-	#matches=dl.places.find('north-america_united-states')
-	#matches=dl.places.find('united-states_iowa')
-	#matches=dl.places.find('puerto-rico_san-juan')
-	#matches=dl.places.find('africa_ethiopia')
-	
 	try:
 		matches=dl.places.find('united-states_'+sNamel+'_'+cNamel)
 		aoi = matches[0]
@@ -281,66 +275,9 @@ for icounty in range(603,len(countylats)):
 		place=aoi['slug']
 		)
 
-	#dltiles = dl.raster.dltiles_from_shape(res, vlen, padding, shape)
-	#dltile=dl.raster.dltile_from_latlon(clat,clon,res,vlen,padding)
-	#dltile=dl.raster.dltile_from_latlon(7.5,37.5,res,vlen,padding)
-	#dltile=dl.raster.dltile_from_latlon(7.902495, 38.034848,res,vlen,padding)
-	#lonlist=np.zeros(shape=(len(dltiles['features'])))
-	#latlist=np.zeros(shape=(len(dltiles['features'])))
-	#for i in range(len(dltiles['features'])):
-	#	lonlist[i]=dltiles['features'][i]['geometry']['coordinates'][0][0][0]
-	#	latlist[i]=dltiles['features'][i]['geometry']['coordinates'][0][0][1]
-	
-	#features=np.zeros(shape=(len(dltiles),nyears,pixels*pixels,6))
-	#target=np.zeros(shape=(len(dltiles),nyears,pixels*pixels))
-	#features=np.zeros(shape=(len(dltile),nyears,pixels*pixels,6))
-	#target=np.zeros(shape=(len(dltile),nyears,pixels*pixels))
-	
-	#@celery.task  
-	#def tile_function(dltile,makePlots=False):
-	
-	#clas=["" for x in range(7)]
-	#clasLong=["" for x in range(255)]
-	#clasDict={}
-	#clasNumDict={}
-	#f=open(wd+'data/ground_data.txt')							    
-	#for line in f:
-	#	tmp=line.split(',')
-	#	clasNumLong=int(tmp[0])
-	#	clasLong[clasNumLong]=tmp[1]
-	#	clasNum=int(tmp[3])
-	#	clas[clasNum]=tmp[2]
-	#	
-	#	clasDict[clasLong[clasNumLong]]=clas[clasNum]
-	#	clasNumDict[clasNumLong]=clasNum
-	
-	#lon=dltile['geometry']['coordinates'][0][0][0]
-	#lat=dltile['geometry']['coordinates'][0][0][1]
-	#print lon
-	#print lat
-	#latsave=str(lat)
-	#latsave=latsave.replace('.','-')
-	#lonsave=str(lon)
-	#lonsave=lonsave.replace('.','-')
-	
 	print '\n\n'
 	print cName,',',sName
-	#print 'dltile: '+str(tile)+' of '+str(len(dltiles['features']))
-	
-	
-	#oceanMask=np.zeros(shape=(pixels,pixels))
-	
-	#  for dltiles  #
-	#images = dl.metadata.search(
-	##products='landsat:LT05:PRE:TOAR',
-	#	products='modis:09:CREFL',
-	#	start_time=start,  #start='2000-01-01'
-	#	end_time=end,   #end='2016-12-31'
-	#	geom=dltile['geometry'],
-	#	#cloud_fraction=0.8,
-	#	limit = 10000
-	#	)
-	
+
 	n_images = len(images['features'])
 	print('Number of image matches: %d' % n_images)
 	#avail_bands = dl.raster.get_bands_by_constellation("L5").keys()
@@ -350,35 +287,6 @@ for icounty in range(603,len(countylats)):
 	#band_info=dl.metadata.bands(products='landsat:LT05:PRE:TOAR')
 	band_info=dl.metadata.bands(products='modis:09:CREFL')
 	
-	#dayOfYear=np.zeros(shape=(nyears,12))
-	#year=np.zeros(shape=(n_images),dtype=int)
-	#month=np.zeros(shape=(n_images),dtype=int)
-	#day=np.zeros(shape=(n_images),dtype=int)
-	#plotYear=np.zeros(shape=(nyears,12))
-	#xtime=[]
-	#i=-1
-	#for feature in images['features']:
-	#	i+=1
-	#	# get the scene id
-	#	scene = feature['id']
-	#		
-	#	xtime.append(str(images['features'][i]['id'][20:30]))
-	#	#xtime.append(str(images['features'][i]['properties']['acquired'][0:10]))
-	#	date=xtime[i]
-	#	year[i]=xtime[i][0:4]
-	#	if i==0:
-	#		startyear=year[i]
-	#		nyears=2018-startyear
-	#	y=year[i]-startyear
-	#	month[i]=xtime[i][5:7]
-	#	m=month[i]-1
-	#	day[i]=xtime[i][8:10]
-	#	dayOfYear[y,m]=(float(month[i])-1)*30+float(day[i])
-	#	plotYear[y,m]=year[i]+dayOfYear[y,m]/365.0
-	#	
-	#	
-	#indexSorted=np.argsort(plotYear)
-
 	goodscene=0
 	for i in range(n_images):
 		scene = images['features'][i]['id']
@@ -428,11 +336,11 @@ for icounty in range(603,len(countylats)):
 		print 'no images of', goodn
 		continue
 		
-	countyMask=np.ones(shape=(vlen,hlen))
+	countyMask=np.zeros(shape=(vlen,hlen))
 	for v in range(vlen):
 		for h in range(hlen):
-			if arrNDVI1[v,h,0]!=0 and arrNDVI2[v,h,0]!=0 and arrNDVI3[v,h,0]!=0:
-				countyMask[v,h]=0
+			if arrNDVI1[v,h,0]==0 and arrNDVI2[v,h,0]==0 and arrNDVI3[v,h,0]==0:
+				countyMask[v,h]=1
 
 	####################
 	# Define Variables #
@@ -446,21 +354,12 @@ for icounty in range(603,len(countylats)):
 	eviClimo=np.zeros(shape=(12,vlen,hlen))
 	ndwiClimo=np.zeros(shape=(12,vlen,hlen))
 	climoCounter=np.zeros(shape=(nyears,12,vlen,hlen))
-	plotYear=np.zeros(shape=(nyears,12,65))
-	#year=np.zeros(shape=(n_images))
-	#month=np.zeros(shape=(n_images))
+	plotYear=np.zeros(shape=(nyears,12,100))
 	monthAll=np.zeros(shape=(n_images))
-	#ndviHist=np.zeros(shape=(65,nyears,12))
-	#ndviAvg=np.zeros(shape=(nyears,12))
-	#ndviMed=np.zeros(shape=(nyears,12))
-	
-	#ndviHist=np.zeros(shape=(65,nyears,12))
-	#ndviAvg=np.zeros(shape=(nyears,12))
-	#ndviMed=np.zeros(shape=(nyears,12))
-	ndviAll=-9999*np.ones(shape=(65,vlen,hlen))
-	eviAll=-9999*np.ones(shape=(65,vlen,hlen))
-	Mask=np.ones(shape=(65,vlen,hlen)) 
-	ndwiAll=np.zeros(shape=(65,vlen,hlen))
+	ndviAll=-9999*np.ones(shape=(100,vlen,hlen))
+	eviAll=-9999*np.ones(shape=(100,vlen,hlen))
+	Mask=np.ones(shape=(100,vlen,hlen)) 
+	ndwiAll=np.zeros(shape=(100,vlen,hlen))
 	####################
 	k=-1
 	d=-1
@@ -475,7 +374,7 @@ for icounty in range(603,len(countylats)):
 				continue
 			for v in range(vlen):
 				for h in range(hlen):
-					for d in range(65):
+					for d in range(100):
 						if Mask[d,v,h]==0:
 							ndviMonthAvg[y,m,v,h]+=ndviAll[d,v,h]
 							eviMonthAvg[y,m,v,h]+=eviAll[d,v,h]
@@ -485,10 +384,10 @@ for icounty in range(603,len(countylats)):
 					eviClimo[m,v,h]+=eviMonthAvg[y,m,v,h]
 					ndwiClimo[m,v,h]+=ndwiMonthAvg[y,m,v,h]
 			d=-1
-			ndviAll=-9999*np.ones(shape=(65,vlen,hlen))
-			eviAll=-9999*np.ones(shape=(65,vlen,hlen))
-			Mask=np.ones(shape=(65,vlen,hlen)) 
-			ndwiAll=np.zeros(shape=(65,vlen,hlen))
+			ndviAll=-9999*np.ones(shape=(100,vlen,hlen))
+			eviAll=-9999*np.ones(shape=(100,vlen,hlen))
+			Mask=np.ones(shape=(100,vlen,hlen)) 
+			ndwiAll=np.zeros(shape=(100,vlen,hlen))
 	
 		if monthAll[j]!=5 and monthAll[j]!=6 and monthAll[j]!=7 and monthAll[j]!=8:
 		#if monthAll[j]!=6:
@@ -531,105 +430,6 @@ for icounty in range(603,len(countylats)):
 			print('ndvi: %s could not be retreived' % scene)
 			continue
 
-		#######################
-		# Get cloud data	  #
-		#######################
-		#findCloud=-9999*np.ones(shape=(vlen,hlen,4)) 
-		#cloudMask=-9999*np.ones(shape=(vlen,hlen)) 
-		#
-		#band_info_index={}
-		#for i in range(len(band_info)):
-		#	band_info_index[band_info[i]['name']]=i
-		#globals().update(locals())
-	
-		#try:
-		#	default_range = band_info[band_info_index['blue']]['default_range']
-		#	data_range = band_info[band_info_index['blue']]['data_range']
-		#	blue, meta = dl.raster.ndarray(
-		#		scene,
-		#		resolution=dltile['properties']['resolution'],
-		#		bounds=dltile['properties']['outputBounds'],
-		#		srs=dltile['properties']['cs_code'],
-		#		bands=['blue', 'alpha'],
-		#		scales=[[default_range[0], default_range[1], data_range[0], data_range[1]]],
-		#		data_type='Float32'
-		#		)
-		#except:
-		#	print('blue: %s could not be retreived' % scene)
-		#	continue 
-	
-		#try:
-		#	default_range = band_info[band_info_index['red']]['default_range']
-		#	data_range = band_info[band_info_index['red']]['data_range']
-		#	red, meta = dl.raster.ndarray(
-		#		scene, #		resolution=dltile['properties']['resolution'], #		bounds=dltile['properties']['outputBounds'], #		srs=dltile['properties']['cs_code'],
-		#		bands=['red', 'alpha'],
-		#		scales=[[default_range[0], default_range[1], data_range[0], data_range[1]]],
-		#		data_type='Float32'
-		#		)
-		#except:
-		#	print('red: %s could not be retreived' % scene)
-		#	continue 
-	
-		#try:
-		#	default_range = band_info[band_info_index['nir']]['default_range']
-		#	data_range = band_info[band_info_index['nir']]['data_range']
-		#	nir, meta = dl.raster.ndarray(
-		#		scene,
-		#		resolution=dltile['properties']['resolution'],
-		#		bounds=dltile['properties']['outputBounds'],
-		#		srs=dltile['properties']['cs_code'],
-		#		bands=['nir', 'alpha'],
-		#		scales=[[default_range[0], default_range[1], data_range[0], data_range[1]]],
-		#		data_type='Float32'
-		#		)
-		#except:
-		#	print('nir: %s could not be retreived' % scene)
-		#	continue
-		#
-		#try:
-		#	default_range = band_info[band_info_index['swir1']]['default_range']
-		#	data_range = band_info[band_info_index['swir1']]['data_range']
-		#	swir1, meta = dl.raster.ndarray(
-		#		scene,
-		#		resolution=dltile['properties']['resolution'],
-		#		bounds=dltile['properties']['outputBounds'],
-		#		srs=dltile['properties']['cs_code'],
-		#		bands=['swir1', 'alpha'],
-		#		scales=[[default_range[0], default_range[1], data_range[0], data_range[1]]],
-		#		data_type='Float32'
-		#		)
-		#except:
-		#	print('swir1: %s could not be retreived' % scene)
-		#	continue 
-	
-		#globals().update(locals())
-		#findCloud[:,:,0]=blue[:,:,0]
-		#findCloud[:,:,1]=red[:,:,0]
-		#findCloud[:,:,2]=nir[:,:,0]
-		#findCloud[:,:,3]=swir1[:,:,0]
-	
-		#cloudMask[:,:]=ltk_cloud_mask(findCloud)
-	
-		try:
-			default_range = band_info[band_info_index['alpha']]['default_range']
-			data_range = band_info[band_info_index['alpha']]['data_range']
-			cloudMask, meta = dl.raster.ndarray(
-				scene,
-				resolution=res,
-				bands=['visual_cloud_mask', 'alpha'],
-				scales=[[default_range[0], default_range[1], data_range[0], data_range[1]]],
-				#scales=[[0, 65535, 0., 1.]],
-				data_type='Float32',
-				cutline=shape['geometry']
-				)
-		except:
-			print('swir1: %s could not be retreived' % scene)
-			continue 
-	
-		#cloudMask=1-cloudMask[:,:,0]
-		cloudMask=cloudMask[:,:,0]
-		#######################
 		
 		###############################################
 		# Test for bad days
@@ -653,9 +453,9 @@ for icounty in range(603,len(countylats)):
 	
 		# take out days with too many clouds
 		#cloudMask = arrCloud[:, :, 0] == 0 # True=good False=bad
-		if np.sum(cloudMask)>0.80*(vlen*hlen):
-			print 'clouds: continued', np.round(np.sum(cloudMask)/(vlen*hlen),3)
-			continue		
+		#if np.sum(cloudMask)>0.85*(np.sum(countyMaskOpposite)):
+		#	print 'clouds: continued', np.round(np.sum(cloudMask)/(np.sum(countyMaskOpposite)),3)
+		#	continue		
 	
 		maskforAlpha = arrNDVI[:, :, 1] == 0 
 		
@@ -683,6 +483,29 @@ for icounty in range(603,len(countylats)):
 		day=xtime[8:10]
 		dayOfYear=(float(month)-1)*30+float(day)
 		plotYear[y,m,d]=year+dayOfYear/365.0
+
+		#######################
+		# Get cloud data	  #
+		#######################
+		try:
+			default_range = band_info[band_info_index['alpha']]['default_range']
+			data_range = band_info[band_info_index['alpha']]['data_range']
+			cloudMask, meta = dl.raster.ndarray(
+				scene,
+				resolution=res,
+				bands=['visual_cloud_mask', 'alpha'],
+				scales=[[default_range[0], default_range[1], data_range[0], data_range[1]]],
+				#scales=[[0, 65535, 0., 1.]],
+				data_type='Float32',
+				cutline=shape['geometry']
+				)
+		except:
+			print('swir1: %s could not be retreived' % scene)
+			continue 
+	
+		#cloudMask=1-cloudMask[:,:,0]
+		cloudMask=cloudMask[:,:,0]
+		#######################
 		
 		###############################################
 		# Back to NDVI
@@ -715,8 +538,8 @@ for icounty in range(603,len(countylats)):
 		#cloudMask[:,:,k]=1-cloudMask[:,:,k]
 	
 		if makePlots:
-			if not os.path.exists(wd+'figures/'+country+'/'+sName+'/'+cName):
-				os.makedirs(wd+'figures/'+country+'/'+sName+'/'+cName)
+			if not os.path.exists(wd+'figures/'+sName+'/'+cName):
+				os.makedirs(wd+'figures/'+sName+'/'+cName)
 			masked_ndvi = np.ma.masked_array(arrNDVI[:, :, 0], Mask[d,:,:])
 			plt.figure(figsize=[10,10])
 			plt.imshow(masked_ndvi, cmap=my_cmap, vmin=-.4, vmax=.9)
@@ -861,28 +684,17 @@ for icounty in range(603,len(countylats)):
 	# Save variables	   #
 	######################## 
 	
-	if not os.path.exists(r'../saved_vars/'+sName+'/'+cName+'/'+goodn):
-		os.makedirs(r'../saved_vars/'+sName+'/'+cName+'/'+goodn)
+	if not os.path.exists(wdvars+sName+'/'+cName+'/'+goodn):
+		os.makedirs(wdvars+sName+'/'+cName+'/'+goodn)
 			 
-	#np.save(wd+'saved_vars/'+sName+'/'+cName+'/ndwiAll',ndwiAll) 
-	##np.save(wd+'saved_vars/'+sName+'/'+cName+'/Mask',Mask)
-	##np.save(wd+'saved_vars/'+sName+'/'+cName+'/oceanMask',oceanMask)
-	#np.save(wd+'saved_vars/'+sName+'/'+cName+'/plotYear',plotYear)
-	#np.save(wd+'saved_vars/'+sName+'/'+cName+'/n_good_days',int(k))
-	##np.save(wd+'saved_vars/'+sName+'/'+cName+'/month',month)
-	##np.save(wd+'saved_vars/'+sName+'/'+cName+'/year',year)
-	##np.save(wd+'saved_vars/'+sName+'/'+cName+'/arrClas',arrClas)
-	#np.save(wd+'saved_vars/'+sName+'/'+cName+'/ndviAll',ndviAll)
-	#np.save(wd+'saved_vars/'+sName+'/'+cName+'/eviAll',eviAll)
-		
-	np.save(wd+'saved_vars/'+sName+'/'+cName+'/'+goodn+'/ndviClimoUnprocessed',ndviClimo)
-	np.save(wd+'saved_vars/'+sName+'/'+cName+'/'+goodn+'/eviClimoUnprocessed',eviClimo)
-	np.save(wd+'saved_vars/'+sName+'/'+cName+'/'+goodn+'/ndwiClimoUnprocessed',ndwiClimo)
-	np.save(wd+'saved_vars/'+sName+'/'+cName+'/'+goodn+'/climoCounterUnprocessed',climoCounter)
-	np.save(wd+'saved_vars/'+sName+'/'+cName+'/'+goodn+'/ndviMonthAvgUnprocessed',ndviMonthAvg)
-	np.save(wd+'saved_vars/'+sName+'/'+cName+'/'+goodn+'/eviMonthAvgUnprocessed',eviMonthAvg) 
-	np.save(wd+'saved_vars/'+sName+'/'+cName+'/'+goodn+'/ndwiMonthAvgUnprocessed',ndwiMonthAvg)
-	np.save(wd+'saved_vars/'+sName+'/'+cName+'/'+goodn+'/countyMask',countyMask)
+	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/ndviClimoUnprocessed',ndviClimo)
+	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/eviClimoUnprocessed',eviClimo)
+	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/ndwiClimoUnprocessed',ndwiClimo)
+	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/climoCounterUnprocessed',climoCounter)
+	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/ndviMonthAvgUnprocessed',ndviMonthAvg)
+	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/eviMonthAvgUnprocessed',eviMonthAvg) 
+	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/ndwiMonthAvgUnprocessed',ndwiMonthAvg)
+	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/countyMask',countyMask)
 
 #for tile in range(len(dltiles['features'])):
 #	tile=30
