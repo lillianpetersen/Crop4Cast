@@ -176,6 +176,7 @@ ndwiAnom=np.ma.masked_array(ndwiAnom,anomMask)
 #	    plt.savefig(wdfigs+'Illinois/'+cName+'_normalized_yield_over_time',dpi=700)
 #	    plt.clf()
 	
+monthName=['January','Febuary','March','April','May','June','July','August','September','October','November','December']
 	
 ### Plot Yield and NDVI Corr ###
 for m in range(4,8):
@@ -185,16 +186,17 @@ for m in range(4,8):
 	Corr=corr(x,ydata)
 	
 	plt.clf()
-	plt.figure(1,figsize=(7,5))
+	plt.figure(1,figsize=(10,8))
 	
 	ydataAvg=np.mean(ydata)
 	slope,bIntercept=np.polyfit(x,ydata,1)
 	yfit=slope*x+bIntercept
 	
-	plt.plot(x,ydata,'*b',x,yfit,'g-')
-	plt.title(str(m+1)+' ndvi and Crop Yield, Corr='+str(round(Corr,2))+' Slope= '+str(round(slope*100,3)))
+	plt.plot(x,ydata,'.b',x,yfit,'g-')
+	plt.title(monthName[m]+' ndvi and Crop Yield, Corr='+str(round(Corr,2))+' Slope= '+str(round(slope*100,3)))
 	plt.ylabel('ndvi Anomaly')
 	plt.xlabel('crop yield (bu/acre)')
+	plt.ylim([-.01,.01])
 	plt.grid(True)
 	plt.savefig(wdfigs+'Illinois/ndvi_yield_corr_'+str(m),dpi=700)
 
@@ -207,38 +209,40 @@ for m in range(4,8):
 	Corr=corr(x,ydata)
 	
 	plt.clf()
-	plt.figure(1,figsize=(7,5))
+	plt.figure(1,figsize=(10,8))
 	
 	ydataAvg=np.mean(ydata)
 	slope,bIntercept=np.polyfit(x,ydata,1)
 	yfit=slope*x+bIntercept
 	
-	plt.plot(x,ydata,'*b',x,yfit,'g-')
-	plt.title(str(m+1)+' evi and Crop Yield, Corr='+str(round(Corr,2))+' Slope= '+str(round(slope*100,3)))
+	plt.plot(x,ydata,'.b',x,yfit,'g-')
+	plt.title(monthName[m]+' evi and Crop Yield, Corr='+str(round(Corr,2))+' Slope= '+str(round(slope*100,3)))
 	plt.ylabel('evi Anomaly')
 	plt.xlabel('crop yield (bu/acre)')
+	plt.ylim([-.01,.01])
 	plt.grid(True)
 	plt.savefig(wdfigs+'Illinois/edvi_yield_corr_'+str(m),dpi=700)
 
 
 ### Plot Yield and NDVI Corr ###
 for m in range(4,8):
-	cropYield1=np.ma.masked_array(cropYieldDet,anomMask[:,:,m])
+	cropYield1=np.ma.masked_array(cropYield,anomMask[:,:,m])
 	x=np.ma.compressed(cropYield1)
 	ydata=np.ma.compressed(ndwiAnom[:,:,m])
 	Corr=corr(x,ydata)
 	
 	plt.clf()
-	plt.figure(1,figsize=(7,5))
+	plt.figure(1,figsize=(10,8))
 	
 	ydataAvg=np.mean(ydata)
 	slope,bIntercept=np.polyfit(x,ydata,1)
 	yfit=slope*x+bIntercept
 	
-	plt.plot(x,ydata,'*b',x,yfit,'g-')
-	plt.title(str(m+1)+' ndwi and Crop Yield, Corr='+str(round(Corr,2))+' Slope= '+str(round(slope*100,3)))
+	plt.plot(x,ydata,'.b',x,yfit,'g-')
+	plt.title(monthName[m]+' ndwi and Crop Yield, Corr='+str(round(Corr,2))+' Slope= '+str(round(slope*100,3)))
 	plt.xlabel('ndwi Anomaly')
 	plt.ylabel('crop yield (bu/acre)')
+	plt.ylim([-.01,.01])
 	plt.grid(True)
 	plt.savefig(wdfigs+'Illinois/ndwi_yield_corr_'+str(m),dpi=700)
 exit()

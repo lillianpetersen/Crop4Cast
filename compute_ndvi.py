@@ -238,8 +238,8 @@ res=120
 #pixels=vlen+2*padding
 #	
 badarrays=0
-for icounty in range(len(countylats)):
-#for icounty in range(670,len(countylats)):
+#for icounty in range(len(countylats)):
+for icounty in range(676,len(countylats)):
 
 	clat=countylats[icounty]
 	clon=countylons[icounty]
