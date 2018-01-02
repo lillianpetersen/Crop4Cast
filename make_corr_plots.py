@@ -6,7 +6,6 @@ import math
 import sys
 from sys import exit
 import sklearn
-from sklearn import svm
 import time
 from sklearn.preprocessing import StandardScaler
 from operator import and_
@@ -69,7 +68,7 @@ def corr(x,y):
 
 
 nyears=16
-makePlots=False
+makePlots=True
 
 precipAnom=-9999*np.ones(shape=(117,12))
 
@@ -106,6 +105,7 @@ for icounty in range(3143):
 ncounties=icountyIll+1
 yieldMask=np.zeros(shape=(ncounties,nyears))
 anomMask=np.zeros(shape=(ncounties,nyears,12))
+badCounter=0
 for icounty in range(ncounties):
 	for y in range(nyears):
 		if cropYield[icounty,y]<1:
@@ -116,8 +116,12 @@ for icounty in range(ncounties):
 		for m in range(12):
 			if m<4 or m>7:
 				anomMask[icounty,y,m]=1
-			if ndviAnom[icounty,y,m]==0 or math.isnan(ndviAnom[icounty,y,m])==True or ndviAnom[icounty,y,m]<-90:
+			if ndviAnom[icounty,y,m]==0 or ndviAnom[icounty,y,m]<-90:
+				badCounter+=1
 				anomMask[icounty,y,m]=1
+			if math.isnan(ndviAnom[icounty,y,m])==True:
+				anomMask[icounty,y,:]=1
+					
 
 
 #cropYield=np.ma.masked_array(cropYield,yieldMask)
@@ -181,8 +185,11 @@ monthName=['January','Febuary','March','April','May','June','July','August','Sep
 ### Plot Yield and NDVI Corr ###
 for m in range(4,8):
 	cropYield1=np.ma.masked_array(cropYield,anomMask[:,:,m])
-	x=np.ma.compressed(cropYield1)
-	ydata=np.ma.compressed(ndviAnom[:,:,m])
+	ydata=np.ma.compressed(cropYield1)
+	x=np.ma.compressed(ndviAnom[:,:,m])
+	print x.shape,ydata.shape
+	if not makePlots:
+		continue
 	Corr=corr(x,ydata)
 	
 	plt.clf()
@@ -193,10 +200,10 @@ for m in range(4,8):
 	yfit=slope*x+bIntercept
 	
 	plt.plot(x,ydata,'.b',x,yfit,'g-')
-	plt.title(monthName[m]+' ndvi and Crop Yield, Corr='+str(round(Corr,2))+' Slope= '+str(round(slope*100,3)))
-	plt.ylabel('ndvi Anomaly')
-	plt.xlabel('crop yield (bu/acre)')
-	plt.ylim([-.01,.01])
+	plt.title(monthName[m]+' ndvi and Crop Yield, Corr='+str(round(Corr,2))+' Slope= '+str(int(round(slope,0))))
+	plt.ylabel('crop yield (bu/acre)')
+	plt.xlabel('ndvi Anomaly')
+	plt.xlim([-.01,.01])
 	plt.grid(True)
 	plt.savefig(wdfigs+'Illinois/ndvi_yield_corr_'+str(m),dpi=700)
 
@@ -204,8 +211,11 @@ for m in range(4,8):
 ### Plot Yield and NDVI Corr ###
 for m in range(4,8):
 	cropYield1=np.ma.masked_array(cropYield,anomMask[:,:,m])
-	x=np.ma.compressed(cropYield1)
-	ydata=np.ma.compressed(eviAnom[:,:,m])
+	ydata=np.ma.compressed(cropYield1)
+	x=np.ma.compressed(eviAnom[:,:,m])
+	print x.shape,ydata.shape
+	if not makePlots:
+		continue
 	Corr=corr(x,ydata)
 	
 	plt.clf()
@@ -216,19 +226,22 @@ for m in range(4,8):
 	yfit=slope*x+bIntercept
 	
 	plt.plot(x,ydata,'.b',x,yfit,'g-')
-	plt.title(monthName[m]+' evi and Crop Yield, Corr='+str(round(Corr,2))+' Slope= '+str(round(slope*100,3)))
-	plt.ylabel('evi Anomaly')
-	plt.xlabel('crop yield (bu/acre)')
-	plt.ylim([-.01,.01])
+	plt.title(monthName[m]+' evi and Crop Yield, Corr='+str(round(Corr,2))+' Slope= '+str(int(round(slope,0))))
+	plt.xlabel('evi Anomaly')
+	plt.ylabel('crop yield (bu/acre)')
+	plt.xlim([-.01,.01])
 	plt.grid(True)
-	plt.savefig(wdfigs+'Illinois/edvi_yield_corr_'+str(m),dpi=700)
+	plt.savefig(wdfigs+'Illinois/evi_yield_corr_'+str(m),dpi=700)
 
 
 ### Plot Yield and NDVI Corr ###
 for m in range(4,8):
 	cropYield1=np.ma.masked_array(cropYield,anomMask[:,:,m])
-	x=np.ma.compressed(cropYield1)
-	ydata=np.ma.compressed(ndwiAnom[:,:,m])
+	ydata=np.ma.compressed(cropYield1)
+	x=np.ma.compressed(ndwiAnom[:,:,m])
+	print x.shape,ydata.shape
+	if not makePlots:
+		continue
 	Corr=corr(x,ydata)
 	
 	plt.clf()
@@ -239,12 +252,38 @@ for m in range(4,8):
 	yfit=slope*x+bIntercept
 	
 	plt.plot(x,ydata,'.b',x,yfit,'g-')
-	plt.title(monthName[m]+' ndwi and Crop Yield, Corr='+str(round(Corr,2))+' Slope= '+str(round(slope*100,3)))
+	plt.title(monthName[m]+' ndwi and Crop Yield, Corr='+str(round(Corr,2))+' Slope= '+str(int(round(slope,0))))
 	plt.xlabel('ndwi Anomaly')
 	plt.ylabel('crop yield (bu/acre)')
-	plt.ylim([-.01,.01])
+	plt.xlim([-.01,.01])
 	plt.grid(True)
 	plt.savefig(wdfigs+'Illinois/ndwi_yield_corr_'+str(m),dpi=700)
+
+
+#xMulti=np.zeros(shape=(12,ncounties*nyears))
+xMulti=np.zeros(shape=(x.shape[0],12))
+cropYield1=np.ma.masked_array(cropYield,anomMask[:,:,4])
+ydata=np.ma.compressed(cropYield1)
+
+iMulti=-1
+for m in range(4,8):
+	iMulti+=1
+	x=np.ma.compressed(ndviAnom[:,:,m])
+	xMulti[:,iMulti]=x
+
+for m in range(4,8):
+	iMulti+=1
+	x=np.ma.compressed(eviAnom[:,:,m])
+	xMulti[:,iMulti]=x
+
+for m in range(4,8):
+	iMulti+=1
+	x=np.ma.compressed(ndwiAnom[:,:,m])
+	xMulti[:,iMulti]=x
+
+clf=linear_model.LinearRegression()
+clf.fit(xMulti,ydata)
+
 exit()
 
 
