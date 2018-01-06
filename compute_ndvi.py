@@ -238,8 +238,8 @@ res=120
 #pixels=vlen+2*padding
 #	
 badarrays=0
-#for icounty in range(len(countylats)):
-for icounty in range(676,len(countylats)):
+for icounty in range(len(countylats)):
+#for icounty in range(668,len(countylats)):
 
 	clat=countylats[icounty]
 	clon=countylons[icounty]
@@ -253,6 +253,8 @@ for icounty in range(676,len(countylats)):
 
 	if sName!='Illinois':
 		continue
+	if cName!='Bureau' and cName!='Mason' and cName!='Cass' and cName!='Morgan' and cName!='Menard' and cName!='Sangamon' and cName!='Clark' and cName!='Coles':
+		continue
 
 	print 'good=',goodn
 	#print sName,cName,clat,clon
@@ -261,10 +263,11 @@ for icounty in range(676,len(countylats)):
 
 	try:
 		matches=dl.places.find('united-states_'+sNamel+'_'+cNamel)
+		#matches=dl.places.find('myanmar')
 		aoi = matches[0]
 		shape = dl.places.shape(aoi['slug'], geom='low')
 	except:
-		print 'could not find', cName
+		print 'could not find'
 	
 	images= dl.metadata.search(
 		products='modis:09:CREFL',
@@ -369,7 +372,7 @@ for icounty in range(676,len(countylats)):
 	
 		if monthAll[j]!=monthAll[j-1] and j!=0:
 			d=-1
-			if monthAll[j-1]!=5 and monthAll[j-1]!=6 and monthAll[j-1]!=7 and monthAll[j-1]!=8:
+			if monthAll[j-1]!=5 and monthAll[j-1]!=6 and monthAll[j-1]!=7 and monthAll[j-1]!=8 and monthAll[j-1]!=9:
 			#if monthAll[j-1]!=6:
 				continue
 			for v in range(vlen):
@@ -389,7 +392,7 @@ for icounty in range(676,len(countylats)):
 			Mask=np.ones(shape=(100,vlen,hlen)) 
 			ndwiAll=np.zeros(shape=(100,vlen,hlen))
 	
-		if monthAll[j]!=5 and monthAll[j]!=6 and monthAll[j]!=7 and monthAll[j]!=8:
+		if monthAll[j]!=5 and monthAll[j]!=6 and monthAll[j]!=7 and monthAll[j]!=8 and monthAll[j-1]!=9:
 		#if monthAll[j]!=6:
 			d=-1
 			continue
@@ -501,6 +504,8 @@ for icounty in range(676,len(countylats)):
 				)
 		except:
 			print('swir1: %s could not be retreived' % scene)
+			k-=1
+			d-=1
 			continue 
 	
 		#cloudMask=1-cloudMask[:,:,0]
@@ -585,6 +590,8 @@ for icounty in range(676,len(countylats)):
 				)
 		except:
 			print('evi: %s could not be retreived' % scene)
+			k-=1
+			d-=1
 			continue
 	
 		if makePlots:
@@ -619,6 +626,8 @@ for icounty in range(676,len(countylats)):
 				)
 		except:
 			print('nir: %s could not be retreived' % scene)
+			k-=1
+			d-=1
 			continue
 	
 		nirM=np.ma.masked_array(nir[:,:,0],Mask[d,:,:])
@@ -637,6 +646,8 @@ for icounty in range(676,len(countylats)):
 				)
 		except:
 			print('green: %s could not be retreived' % scene)
+			k-=1
+			d-=1
 			continue
 		  
 		greenM=np.ma.masked_array(green[:,:,0],Mask[d,:,:])

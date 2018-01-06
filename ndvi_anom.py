@@ -20,7 +20,7 @@ countylons=np.load(wdvars+'county_lons.npy')
 countyName=np.load(wdvars+'countyName.npy')
 stateName=np.load(wdvars+'stateName.npy')
 
-nyears=16
+nyears=17
 nName=['15n','16n']
 makePlots=False
 
@@ -39,6 +39,8 @@ for icounty in range(len(countylats)):
 		continue
 	if clat<38:
 		continue
+	if cName!='Cole':
+		continue
 
 	print '\n',cName
 
@@ -49,7 +51,6 @@ for icounty in range(len(countylats)):
 	eviAnomSum=np.zeros(shape=(nyears,12))
 	ndwiAnomSum=np.zeros(shape=(nyears,12))
 
-	countyMask=np.ones(shape=(vlen,hlen))
 
 	for n in range(2):
 
@@ -68,6 +69,7 @@ for icounty in range(len(countylats)):
 			print 'no',nName[n],'for', cName
 			goodn[n]=False
 			continue
+		exit()
 
 		if climoCounterAll.shape[0]==1:
 			print 'ONLY ONE YEAR!!!!!', nName[n]
@@ -213,7 +215,7 @@ for icounty in range(len(countylats)):
 	#	plt.title('ndwi Anomaly Ohio')
 	#	plt.ylim([-.08,.08])
 	#	plt.savefig(wdfigs+sName+'/'+cName+'/ndwiAnom',dpi=700)
-	#exit()
+	exit()
 	
 
 

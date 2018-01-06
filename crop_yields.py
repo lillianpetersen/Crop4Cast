@@ -12,6 +12,8 @@ from sklearn.preprocessing import StandardScaler
 
 wd='/Users/lilllianpetersen/Google Drive/science_fair/'
 wddata='/Users/lilllianpetersen/data/'
+wdvars='/Users/lilllianpetersen/saved_vars/'
+wdfigs='/Users/lilllianpetersen/figures/'
 
 f=open(wddata+'crop_production_ethiopia.csv')
 
@@ -46,7 +48,7 @@ for irow in range(len(data)):
 indexSorted=np.argsort(production2014)
 indexSorted=np.flip(indexSorted,0)
 for icrop in range(10):
-    print crop2014[indexSorted[icrop]],production2014[indexSorted[icrop]]/1.e6
+    print crop2014[indexSorted[icrop]],production2014[indexSorted[icrop]]/1.e6,indexSorted[icrop]
 
 year=np.zeros(shape=(nyears))
 col=np.zeros(shape=(nyears),dtype=int)
@@ -58,7 +60,7 @@ production=np.zeros(shape=(nyears,ncrops))
 area=np.zeros(shape=(nyears,ncrops))
 cropYield=np.zeros(shape=(nyears,ncrops))
 crop=[]
-cropcode=np.zeros(shape=(ncrops))
+cropcode=np.zeros(shape=(ncrops),dtype=int)
 nCropsSoFar=-1
 for irow in range(len(data)):
 	if data[irow][5]=='Area harvested':
@@ -81,6 +83,32 @@ for irow in range(len(data)):
 			if data[irow+2][col[iyear]]!='':
 				production[iyear,icrop]=data[irow+2][col[iyear]]
 
+cornYield=np.zeros(shape=(nyears))
+b=0
+for iyear in range(nyears):
+	try:
+		cornYield[iyear]=float(data[106][col[iyear]])
+		cornYield[iyear]=cornYield[iyear]*(200/125520.) # convert ha/hg to bu/acre
+	except:
+		b+=1
+	try:
+		cornYield[iyear]=float(data[366][col[iyear]])
+		cornYield[iyear]=cornYield[iyear]*(200/125520.) # convert ha/hg to bu/acre
+	except:
+		b+=1
+
+year=np.arange(1961,2015)
+plt.clf()
+plt.figure(figsize=[6,5])
+plt.plot(year,cornYield,'-*g')
+plt.title('Corn Yield, Ethiopia')
+plt.xlabel('Year')
+plt.ylabel('Corn Yield, Bu/Acre')
+plt.grid(True)
+plt.savefig(wdfigs+'Ethiopia/corn_yield',dpi=700)
+
+exit()
+
 indexSorted=np.argsort(production[nyears-1,:])
 indexSorted=np.flip(indexSorted,0)
 
@@ -96,7 +124,7 @@ plt.title('Crops Production')
 plt.xlabel('year')
 plt.ylabel('production (millions tons)')
 plt.grid(True)
-plt.savefig(wd+'/figures/Ethiopia/crop_production')
+plt.savefig(wdfigs+'Ethiopia/crop_production')
 
 legendtext=[]
 plt.clf()
@@ -108,7 +136,7 @@ plt.title('Cereal Production')
 plt.xlabel('year')
 plt.ylabel('production (millions tons)')
 plt.grid(True)
-plt.savefig(wd+'/figures/Ethiopia/cereals_production')
+plt.savefig(wdfigs+'Ethiopia/cereals_production')
 
 plt.clf()
 plt.figure(figsize=[10,10])
@@ -118,7 +146,7 @@ plt.title('Cereal Yield')
 plt.xlabel('year')
 plt.ylabel('yield (thousands units)')
 plt.grid(True)
-plt.savefig(wd+'/figures/Ethiopia/cereals_yield')
+plt.savefig(wdfigs+'Ethiopia/cereals_yield')
 
 plt.clf()
 plt.figure(figsize=[10,10])
@@ -128,7 +156,7 @@ plt.title('Cereal Area Harvested')
 plt.xlabel('year')
 plt.ylabel('area (millions hectares)')
 plt.grid(True)
-plt.savefig(wd+'/figures/Ethiopia/cereals_area')
+plt.savefig(wdfigs+'Ethiopia/cereals_area')
 
 legendtext=[]
 plt.clf()
@@ -141,7 +169,7 @@ plt.title('Crops Yields')
 plt.xlabel('year')
 plt.ylabel('normalized yield')
 plt.grid(True)
-plt.savefig(wd+'/figures/ethiopia/crop_yield')
+plt.savefig(wdfigs+'Ethiopia/crop_yield')
 
 legendtext=[]
 plt.clf()
@@ -154,13 +182,13 @@ plt.title('Cereal Area Harvested')
 plt.xlabel('year')
 plt.ylabel('area (millions hectares)')
 plt.grid(True)
-plt.savefig(wd+'/figures/ethiopia/crop_area')
+plt.savefig(wdfigs+'Ethiopia/crop_area')
 
 savedCropYield=np.zeros(shape=(116,ncrops))
 savedCropYield[61:115,:]=cropYield
 
-np.save(wd+'saved_vars/ethiopia/production',production)
-np.save(wd+'saved_vars/ethiopia/cropYield',savedCropYield)
-np.save(wd+'saved_vars/ethiopia/areaHarvested',area)
+np.save(wdvars+'ethiopia/production',production)
+np.save(wdvars+'ethiopia/cropYield',savedCropYield)
+np.save(wdvars+'ethiopia/areaHarvested',area)
 
-np.save(wd+'saved_vars/ethiopia/cropYieldBoxAvg.npy',cropYield[:,indexSorted[0]])
+np.save(wdvars+'ethiopia/cropYieldBoxAvg.npy',cropYield[:,indexSorted[0]])
