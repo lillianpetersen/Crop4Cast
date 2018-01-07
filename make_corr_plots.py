@@ -328,7 +328,7 @@ if makePlots:
 	ax2.set_ylabel('NDVI Anomaly *1000 (avg over state and July and August)',color='r')
 	ax1.set_xlabel('year')
 	ax1.grid(True)
-	plt.title('Corn Yield and NDVI Anomaly, Corr= '+str(round(Corr,2)))
+	plt.title('Illinois Corn Yield and NDVI Anomaly, Corr= '+str(round(Corr,2)))
 	plt.savefig(wdfigs+'Illinois/corn_yield_and_ndvi_anom',dpi=700)
 	plt.clf()	
 ########################
@@ -355,7 +355,7 @@ if makePlots:
 	ax2.set_ylabel('EVI Anomaly *1000 (avg over state and July and August)',color='b')
 	ax1.set_xlabel('year')
 	ax1.grid(True)
-	plt.title('Corn Yield and EVI Anomaly, Corr= '+str(round(Corr,2)))
+	plt.title('Illinois Corn Yield and EVI Anomaly, Corr= '+str(round(Corr,2)))
 	plt.savefig(wdfigs+'Illinois/corn_yield_and_evi_anom',dpi=700)
 	plt.clf()	
 ########################
@@ -382,7 +382,7 @@ if makePlots:
 	ax2.set_ylabel('NDWI Anomaly *1000 (avg over state and July and August)',color='b')
 	ax1.set_xlabel('year')
 	ax1.grid(True)
-	plt.title('Corn Yield and NDWI Anomaly, Corr= '+str(round(Corr,2)))
+	plt.title('Illinois Corn Yield and NDWI Anomaly, Corr= '+str(round(Corr,2)))
 	plt.savefig(wdfigs+'Illinois/corn_yield_and_ndwi_anom',dpi=700)
 	plt.clf()	
 ########################

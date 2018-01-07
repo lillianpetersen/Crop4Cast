@@ -206,6 +206,7 @@ my_cmap = make_cmap(colors)
 ##wd='gs://lillian-bucket-storage/'
 wd='/Users/lilllianpetersen/Google Drive/science_fair/'
 wdvars='/Users/lilllianpetersen/saved_vars/'
+wdfigs='/Users/lilllianpetersen/figures/'
 
 countylats=np.load(wdvars+'county_lats.npy')
 countylons=np.load(wdvars+'county_lons.npy')
@@ -214,11 +215,12 @@ stateName=np.load(wdvars+'stateName.npy')
 
 # Celery task goes into start-up script
 
-badn='16N'
-goodn='15N'
+badn='15N'
+goodn='16N'
 #vlen=256
 #hlen=256
-start='2000-01-01'
+#start='2000-01-01'
+start='2012-01-01'
 end='2016-12-31'
 #end='2001-12-31'
 nyears=17
@@ -238,8 +240,8 @@ res=120
 #pixels=vlen+2*padding
 #	
 badarrays=0
-for icounty in range(len(countylats)):
-#for icounty in range(668,len(countylats)):
+#for icounty in range(len(countylats)):
+for icounty in range(606,len(countylats)):
 
 	clat=countylats[icounty]
 	clon=countylons[icounty]
@@ -253,7 +255,11 @@ for icounty in range(len(countylats)):
 
 	if sName!='Illinois':
 		continue
-	if cName!='Bureau' and cName!='Mason' and cName!='Cass' and cName!='Morgan' and cName!='Menard' and cName!='Sangamon' and cName!='Clark' and cName!='Coles':
+	#if cName!='Bureau' and cName!='Mason' and cName!='Cass' and cName!='Morgan' and cName!='Menard' and cName!='Sangamon' and cName!='Clark' and cName!='Coles':
+
+	#if clat>38:
+	#	continue
+	if cName!='Sangamon':
 		continue
 
 	print 'good=',goodn
@@ -262,8 +268,8 @@ for icounty in range(len(countylats)):
 		cNamel='dekalb'
 
 	try:
-		matches=dl.places.find('united-states_'+sNamel+'_'+cNamel)
-		#matches=dl.places.find('myanmar')
+		#matches=dl.places.find('united-states_'+sNamel+'_'+cNamel)
+		matches=dl.places.find('morocco')
 		aoi = matches[0]
 		shape = dl.places.shape(aoi['slug'], geom='low')
 	except:
@@ -293,6 +299,8 @@ for icounty in range(len(countylats)):
 	goodscene=0
 	for i in range(n_images):
 		scene = images['features'][i]['id']
+		print scene
+		exit()
 		if scene[36:39]!=badn:
 			goodscene+=1
 			if goodscene==1:
@@ -543,8 +551,8 @@ for icounty in range(len(countylats)):
 		#cloudMask[:,:,k]=1-cloudMask[:,:,k]
 	
 		if makePlots:
-			if not os.path.exists(wd+'figures/'+sName+'/'+cName):
-				os.makedirs(wd+'figures/'+sName+'/'+cName)
+			if not os.path.exists(wdfigs+sName+'/'+cName):
+				os.makedirs(wdfigs+sName+'/'+cName)
 			masked_ndvi = np.ma.masked_array(arrNDVI[:, :, 0], Mask[d,:,:])
 			plt.figure(figsize=[10,10])
 			plt.imshow(masked_ndvi, cmap=my_cmap, vmin=-.4, vmax=.9)
@@ -552,7 +560,7 @@ for icounty in range(len(countylats)):
 			plt.title('NDVI: '+cName+', '+sName+', '+str(date), fontsize=20)
 			cb = plt.colorbar()
 			cb.set_label("NDVI")
-			plt.savefig(wd+'figures/'+country+'/'+sName+'/'+cName+'/ndvi_'+str(date)+'_'+str(k)+'.pdf')
+			plt.savefig(wdfigs+sName+'/'+cName+'/ndvi_'+str(date)+'_'+str(k)+'.pdf')
 			plt.clf() 
 	
 		ndviAll[d,:,:]=np.ma.masked_array(arrNDVI[:,:,0],Mask[d,:,:])
@@ -565,10 +573,10 @@ for icounty in range(len(countylats)):
 			plt.clf()
 			plt.figure(figsize=[10,10])
 			plt.imshow(np.ma.masked_array(cloudMask,Mask[d,:,:]), cmap='gray', vmin=0, vmax=1)
-			plt.title('Cloud: '+cName+', '+sName+', '+str(date), fontsize=20)
-			cb = plt.colorbar()
-			cb.set_label("Cloud")
-			plt.savefig(wd+'figures/'+country+'/'+sName+'/'+cName+'/cloud_'+str(date)+'_'+str(k)+'.pdf')
+			plt.title('Cloud Mask: '+cName+', '+sName+', '+str(date), fontsize=20)
+			#cb = plt.colorbar()
+			#cb.set_label("Cloud")
+			plt.savefig(wdfigs+sName+'/'+cName+'/cloud_'+str(date)+'_'+str(k)+'.pdf')
 			plt.clf()
 			
 	
@@ -603,7 +611,7 @@ for icounty in range(len(countylats)):
 			plt.title('EVI: '+cName+', '+sName+', '+str(date), fontsize=20)
 			cb = plt.colorbar()
 			cb.set_label("EVI")
-			plt.savefig(wd+'figures/'+country+'/'+sName+'/'+cName+'/evi_'+str(date)+'_'+str(k)+'.pdf')
+			plt.savefig(wdfigs+sName+'/'+cName+'/evi_'+str(date)+'_'+str(k)+'.pdf')
 			plt.clf() 
 	
 		eviAll[d,:,:]=np.ma.masked_array(arrEVI[:,:,0],Mask[d,:,:])
@@ -665,7 +673,7 @@ for icounty in range(len(countylats)):
 			plt.title('NDWI:' +cName+', '+sName+', '+str(date), fontsize=20)
 			cb = plt.colorbar()
 			cb.set_label("NDWI")
-			plt.savefig(wd+'figures/'+country+'/'+sName+'/'+cName+'/ndwi_'+str(date)+'_'+str(k)+'.pdf')
+			plt.savefig(wdfigs+sName+'/'+cName+'/ndwi_'+str(date)+'_'+str(k)+'.pdf')
 			plt.clf()
 		
 		###############################################
@@ -685,11 +693,9 @@ for icounty in range(len(countylats)):
 	
 			plt.figure(figsize=[10,10])
 			plt.imshow(arr)
-			plt.title('visual')
-			plt.savefig(wd+'figures/'+country+'/'+sName+'/'+cName+'/visual_'+str(date)+'_'+str(k)+'.pdf')
+			plt.title('Visible: '+cName+', '+sName+', '+str(date), fontsize=20)
+			plt.savefig(wdfigs+sName+'/'+cName+'/visual_'+str(date)+'_'+str(k)+'.pdf')
 	
-		#if k==2:
-		#	exit()
 		
 	########################
 	# Save variables	   #
