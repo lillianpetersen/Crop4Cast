@@ -119,7 +119,7 @@ for icounty in range(len(countylats)):
 			countyMaskNotBool=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/countyMask.npy')
 	
 		except:
-			print 'no',sName,'for', cName
+			print 'no',nName[n],'for', cName
 			goodn[n]=False
 			continue
 
@@ -147,8 +147,6 @@ for icounty in range(len(countylats)):
 		ndwiAnomAllPix=np.zeros(shape=(nyears,12,vlen,hlen))
 		
 		for m in range(4,9):
-			if m!=4 and m!=5 and m!=6 and m!=7:
-				continue
 			for v in range(vlen):
 				for h in range(hlen):
 					if countyMask[v,h]==1:
@@ -225,7 +223,6 @@ for icounty in range(len(countylats)):
 #			plt.clf()
 #			plt.imshow(eviClimo[7,:,:], vmin=-.6, vmax=.9)
 #			plt.colorbar()
-#			plt.title('evi August Climatology Ohio')
 #			plt.savefig(wdfigs+sName+'/'+cName+'/eviClimo_Aug',dpi=700)
 #			
 #			plt.clf()
@@ -290,16 +287,17 @@ for icounty in range(len(countylats)):
 			eviAvg[icounty,y,m]=eviAvgSum[y,m]/counterSumforAvg[y,m]
 			ndwiAvg[icounty,y,m]=ndwiAvgSum[y,m]/counterSumforAvg[y,m]
 	
-	print ndviAnom[icounty,3,:]
-	print ndviAvg[icounty,3,:]
+	print ndviAnom[icounty,0,4:9]
+	print ndviAvg[icounty,0,4:9]
 
-	np.save(wdvars+sName+'/ndviAnom',ndviAnom)
-	np.save(wdvars+sName+'/eviAnom',eviAnom)
-	np.save(wdvars+sName+'/ndwiAnom',ndwiAnom)
-	
-	np.save(wdvars+sName+'/ndviAvg',ndviAvg)
-	np.save(wdvars+sName+'/eviAvg',eviAvg)
-	np.save(wdvars+sName+'/ndwiAvg',ndwiAvg)
+sName='Illinois'
+np.save(wdvars+sName+'/ndviAnom',ndviAnom)
+np.save(wdvars+sName+'/eviAnom',eviAnom)
+np.save(wdvars+sName+'/ndwiAnom',ndwiAnom)
+
+np.save(wdvars+sName+'/ndviAvg',ndviAvg)
+np.save(wdvars+sName+'/eviAvg',eviAvg)
+np.save(wdvars+sName+'/ndwiAvg',ndwiAvg)
 
 #if makePlots:
 #	plt.clf()

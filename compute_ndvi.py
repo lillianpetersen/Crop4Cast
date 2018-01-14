@@ -215,12 +215,12 @@ stateName=np.load(wdvars+'stateName.npy')
 
 # Celery task goes into start-up script
 
-badn='15N'
-goodn='16N'
+badn='16N'
+goodn='15N'
 #vlen=256
 #hlen=256
-#start='2000-01-01'
-start='2012-01-01'
+start='2000-01-01'
+#start='2012-01-01'
 end='2016-12-31'
 #end='2001-12-31'
 nyears=17
@@ -240,8 +240,7 @@ res=120
 #pixels=vlen+2*padding
 #	
 badarrays=0
-#for icounty in range(len(countylats)):
-for icounty in range(606,len(countylats)):
+for icounty in range(len(countylats)):
 
 	clat=countylats[icounty]
 	clon=countylons[icounty]
@@ -259,7 +258,7 @@ for icounty in range(606,len(countylats)):
 
 	#if clat>38:
 	#	continue
-	if cName!='Sangamon':
+	if cName!='Alexander':
 		continue
 
 	print 'good=',goodn
@@ -268,8 +267,7 @@ for icounty in range(606,len(countylats)):
 		cNamel='dekalb'
 
 	try:
-		#matches=dl.places.find('united-states_'+sNamel+'_'+cNamel)
-		matches=dl.places.find('morocco')
+		matches=dl.places.find('united-states_'+sNamel+'_'+cNamel)
 		aoi = matches[0]
 		shape = dl.places.shape(aoi['slug'], geom='low')
 	except:
@@ -299,8 +297,6 @@ for icounty in range(606,len(countylats)):
 	goodscene=0
 	for i in range(n_images):
 		scene = images['features'][i]['id']
-		print scene
-		exit()
 		if scene[36:39]!=badn:
 			goodscene+=1
 			if goodscene==1:
