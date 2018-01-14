@@ -8,6 +8,7 @@ from sys import exit
 import sklearn
 import time
 from sklearn.preprocessing import StandardScaler
+from sklearn import linear_model
 from operator import and_
 from mpl_toolkits.basemap import Basemap
 from matplotlib.patches import Polygon
@@ -586,6 +587,7 @@ for m in range(4,8):
 
 clf=sklearn.linear_model.LinearRegression()
 clf.fit(xMulti,ydata)
+exit()
 
 
 

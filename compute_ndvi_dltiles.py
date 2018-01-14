@@ -215,16 +215,15 @@ stateName=np.load(wdvars+'stateName.npy')
 
 # Celery task goes into start-up script
 
-pixels=1024
+#pixels=512
 start='2000-01-01'
-end='2017-12-31'
+end='2018-01-03'
 #end='2001-12-31'
-nyears=17
+nyears=18
 #nyears=1
 #country='US'
-country='Ethiopia'
-print country
-makePlots=True
+#country='Ethiopia'
+makePlots=False
 print 'makePlots=',makePlots
 padding = 0
 #pixels = pixels+2*padding
@@ -242,20 +241,30 @@ badarrays=0
 #startlon=-5.210000
 #startlat=33.849857
 
-# Morocco
+#country='Morocco'
 #startlon=-6.21024
 #startlat=34.621505
 
-# Egypt
+#country='Egypt'
 #startlon=30.789474
 #startlat=29.328869
 
-# Tunisia
-#startlon=9.3296
-#startlat=36.943144
+country='Tunisia'
+pixels=1024
+startlon=9.3296
+startlat=36.943144
 
-#dltile=dl.raster.dltile_from_latlon(startlat,startlon,res,pixels,padding)
-dltile=dl.raster.dltile_from_latlon(41.345034,-84.527919,res,pixels,padding)
+#country='Ethiopia'
+#pixels=2048
+#dltile=dl.raster.dltile_from_latlon(7.19669,37.529457,res,pixels,padding)
+print country
+
+dltile=dl.raster.dltile_from_latlon(startlat,startlon,res,pixels,padding)
+#dltile=dl.raster.dltile_from_latlon(7.5,37.5,res,pixels,padding)
+
+
+
+#dltile=dl.raster.dltile_from_latlon(6.592137,37.880928,res,pixels,padding)
 
 images= dl.metadata.search(
 	products='modis:09:CREFL',
@@ -272,6 +281,7 @@ lon=dltile['geometry']['coordinates'][0][0][1]
 
 print '\n\n'
 print lon,lat
+print dltile['geometry']['coordinates']
 
 n_images = len(images['features'])
 print('Number of image matches: %d' % n_images)
@@ -282,21 +292,21 @@ print avail_bands
 #band_info=dl.metadata.bands(products='landsat:LT05:PRE:TOAR')
 band_info=dl.metadata.bands(products='modis:09:CREFL')
 
-sName='Morocco'
-cName='growing_region'
+#sName='Ethiopia'
+#cName='growing_region'
 
 ####################
 # Define Variables #
 ####################
 print pixels
-ndviAnom=-9999*np.ones(shape=(nyears,12,pixels,pixels))
-ndviMonthAvg=np.zeros(shape=(nyears,12,pixels,pixels))
-eviMonthAvg=np.zeros(shape=(nyears,12,pixels,pixels))
-ndwiMonthAvg=np.zeros(shape=(nyears,12,pixels,pixels))
+ndviAnom=-9999*np.ones(shape=(nyears-1,12,pixels,pixels))
+ndviMonthAvg=np.zeros(shape=(nyears-1,12,pixels,pixels))
+eviMonthAvg=np.zeros(shape=(nyears-1,12,pixels,pixels))
+ndwiMonthAvg=np.zeros(shape=(nyears-1,12,pixels,pixels))
 ndviClimo=np.zeros(shape=(12,pixels,pixels))
 eviClimo=np.zeros(shape=(12,pixels,pixels))
 ndwiClimo=np.zeros(shape=(12,pixels,pixels))
-climoCounter=np.zeros(shape=(nyears,12,pixels,pixels))
+climoCounter=np.zeros(shape=(nyears-1,12,pixels,pixels))
 plotYear=np.zeros(shape=(nyears,12,120))
 monthAll=np.zeros(shape=(n_images))
 ndviAll=-9999*np.ones(shape=(120,pixels,pixels))
@@ -323,6 +333,17 @@ for j in range(n_images):
 				ndviClimo[m,v,h]+=ndviMonthAvg[y,m,v,h]
 				eviClimo[m,v,h]+=eviMonthAvg[y,m,v,h]
 				ndwiClimo[m,v,h]+=ndwiMonthAvg[y,m,v,h]
+
+		if not os.path.exists(wdvars+country+'/'+str(lon)+'_'+str(lat)):
+			os.makedirs(wdvars+country+'/'+str(lon)+'_'+str(lat))		 
+		np.save(wdvars+country+'/'+str(lon)+'_'+str(lat)+'/ndviClimoUnprocessed',ndviClimo)
+		np.save(wdvars+country+'/'+str(lon)+'_'+str(lat)+'/eviClimoUnprocessed',eviClimo)
+		np.save(wdvars+country+'/'+str(lon)+'_'+str(lat)+'/ndwiClimoUnprocessed',ndwiClimo)
+		np.save(wdvars+country+'/'+str(lon)+'_'+str(lat)+'/climoCounterUnprocessed',climoCounter)
+		np.save(wdvars+country+'/'+str(lon)+'_'+str(lat)+'/ndviMonthAvgUnprocessed',ndviMonthAvg)
+		np.save(wdvars+country+'/'+str(lon)+'_'+str(lat)+'/eviMonthAvgUnprocessed',eviMonthAvg) 
+		np.save(wdvars+country+'/'+str(lon)+'_'+str(lat)+'/ndwiMonthAvgUnprocessed',ndwiMonthAvg)
+
 		d=-1
 		ndviAll=-9999*np.ones(shape=(120,pixels,pixels))
 		eviAll=-9999*np.ones(shape=(120,pixels,pixels))
@@ -414,7 +435,7 @@ for j in range(n_images):
 
 	maskforAlpha = arrNDVI[:, :, 1] == 0 
 
-	if np.sum(cloudMask)>0.85*(pixels*pixels):
+	if np.sum(cloudMask)>0.80*(pixels*pixels):
 		print 'clouds: continued', np.round(np.sum(cloudMask)/(pixels*pixels),3)
 		continue
 	
@@ -625,7 +646,7 @@ for j in range(n_images):
 		plt.savefig(wdfigs+sName+'/'+cName+'/visual_'+str(date)+'_'+str(k)+'.pdf')
 
 	if makePlots:
-		if k==3:
+		if k==5:
 			exit()
 
 	
