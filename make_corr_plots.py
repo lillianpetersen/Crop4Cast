@@ -12,6 +12,7 @@ from sklearn import linear_model
 from operator import and_
 from mpl_toolkits.basemap import Basemap
 from matplotlib.patches import Polygon
+from mpl_toolkits.mplot3d import Axes3D
 
 wd='/Users/lilllianpetersen/Google Drive/science_fair/'
 wddata='/Users/lilllianpetersen/data/'
@@ -70,46 +71,51 @@ def corr(x,y):
 	return rxy
 
 def make_cmap(colors, position=None, bit=False):
-    '''
-    make_cmap takes a list of tuples which contain RGB values. The RGB
-    values may either be in 8-bit [0 to 255] (in which bit must be set to
-    True when called) or arithmetic [0 to 1] (default). make_cmap returns
-    a cmap with equally spaced colors.
-    Arrange your tuples so that the first color is the lowest value for the
-    colorbar and the last is the highest.
-    position contains values from 0 to 1 to dictate the location of each color.
-    '''
-    import matplotlib as mpl
-    import numpy as np
-    bit_rgb = np.linspace(0,1,256)
-    if position == None:
-        position = np.linspace(0,1,len(colors))
-    else:
-        if len(position) != len(colors):
-            sys.exit("position length must be the same as colors")
-        elif position[0] != 0 or position[-1] != 1:
-            sys.exit("position must start with 0 and end with 1")
-    if bit:
-        for i in range(len(colors)):
-            colors[i] = (bit_rgb[colors[i][0]],
-                         bit_rgb[colors[i][1]],
-                         bit_rgb[colors[i][2]])
-    cdict = {'red':[], 'green':[], 'blue':[]}
-    for pos, color in zip(position, colors):
-        cdict['red'].append((pos, color[0], color[0]))
-        cdict['green'].append((pos, color[1], color[1]))
-        cdict['blue'].append((pos, color[2], color[2]))
+	'''
+	make_cmap takes a list of tuples which contain RGB values. The RGB
+	values may either be in 8-bit [0 to 255] (in which bit must be set to
+	True when called) or arithmetic [0 to 1] (default). make_cmap returns
+	a cmap with equally spaced colors.
+	Arrange your tuples so that the first color is the lowest value for the
+	colorbar and the last is the highest.
+	position contains values from 0 to 1 to dictate the location of each color.
+	'''
+	import matplotlib as mpl
+	import numpy as np
+	bit_rgb = np.linspace(0,1,256)
+	if position == None:
+		position = np.linspace(0,1,len(colors))
+	else:
+		if len(position) != len(colors):
+			sys.exit("position length must be the same as colors")
+		elif position[0] != 0 or position[-1] != 1:
+			sys.exit("position must start with 0 and end with 1")
+	if bit:
+		for i in range(len(colors)):
+			colors[i] = (bit_rgb[colors[i][0]],
+						 bit_rgb[colors[i][1]],
+						 bit_rgb[colors[i][2]])
+	cdict = {'red':[], 'green':[], 'blue':[]}
+	for pos, color in zip(position, colors):
+		cdict['red'].append((pos, color[0], color[0]))
+		cdict['green'].append((pos, color[1], color[1]))
+		cdict['blue'].append((pos, color[2], color[2]))
 
-    cmap = mpl.colors.LinearSegmentedColormap('my_colormap',cdict,256)
-    return cmap
+	cmap = mpl.colors.LinearSegmentedColormap('my_colormap',cdict,256)
+	return cmap
 
 colors = [(.4,0,.6), (0,0,.7), (0,.6,1), (.9,.9,1), (1,.8,.8), (1,1,0), (.8,1,.5), (.1,.7,.1), (.1,.3,.1)]
 my_cmap = make_cmap(colors)
 my_cmap_r=make_cmap(colors[::-1])
 
+colors = [(51, 26, 0),(128, 66, 0), (255, 204, 204), (255,255,255), (0, 179, 60), (0, 102, 0), (0, 51, 0)]
+colors_r=colors[::-1]
+my_cmap_gwb = make_cmap(colors,bit=True)
+my_cmap_gwb_r = make_cmap(colors_r,bit=True)
+
 
 nyears=17
-makePlots=True
+makePlots=False
 
 precipAnom=-9999*np.ones(shape=(117,12))
 
@@ -119,9 +125,9 @@ cropYieldAll=cropYieldAll[:,100:117,0]
 countyName=np.load(wdvars+'countyName.npy')
 stateName=np.load(wdvars+'stateName.npy')
 
-ndviAnomAll=np.load(wdvars+'Illinois/ndviAnom.npy')
-eviAnomAll=np.load(wdvars+'Illinois/eviAnom.npy')
-ndwiAnomAll=np.load(wdvars+'Illinois/ndwiAnom.npy')
+ndviAnomAll=np.load(wdvars+'Illinois/keep/ndviAnom.npy')
+eviAnomAll=np.load(wdvars+'Illinois/keep/eviAnom.npy')
+ndwiAnomAll=np.load(wdvars+'Illinois/keep/ndwiAnom.npy')
 cIndex=np.load(wdvars+'cIndex.npy')
 
 
@@ -192,6 +198,7 @@ if makePlots:
 	plt.clf()
 	plt.plot(x,cropYieldIll,'-*g')
 	plt.ylabel('Yield, Bushels/Acre')
+	plt.yticks([60,80,100,120,140,160,180,200])
 	plt.xlabel('year')
 	plt.title('Illinois Corn Yield, slope='+str(round(slope,2))+' Bu/Acre/Year')
 	plt.grid(True)
@@ -318,16 +325,19 @@ zero=[0 for i in range(nyears+2)]
 
 if makePlots:
 	plt.clf()
-	fig, ax1 = plt.subplots()
-	ax2 = ax1.twinx()
+	fig, ax2 = plt.subplots()
+	ax1 = ax2.twinx()
+
 	ax1.plot(x,ydata1,'-*g')
-	ax2.plot(x,ydata2,'-^r')
+	ax2.plot(x,ydata2,'-^b')
 	ax1.set_yticks([60,80,100,120,140,160,180,200])
-	ax2.set_yticks([-3,-2,-1,0,1,2,3,4,5])
+	ax2.set_ylim([-8,7])
+	ax2.tick_params(axis='y',colors='b')
+	ax1.tick_params(axis='y',colors='g')
 	ax1.set_ylabel('Corn Yield',color='g')
-	ax2.set_ylabel('NDVI Anomaly *100 (avg over state and July and August)',color='r')
+	ax2.set_ylabel('NDVI Anomaly *100 (avg over state and July and August)',color='b')
 	ax1.set_xlabel('year')
-	ax1.grid(True)
+	ax2.grid(True)
 	plt.title('Illinois Corn Yield and NDVI Anomaly, Corr= '+str(round(Corr,2)))
 	plt.savefig(wdfigs+'Illinois/corn_yield_and_ndvi_anom',dpi=700)
 	plt.clf()	
@@ -372,16 +382,19 @@ zero=[0 for i in range(nyears+2)]
 
 if makePlots:
 	plt.clf()
-	fig, ax1 = plt.subplots()
-	ax2 = ax1.twinx()
+	fig, ax2 = plt.subplots()
+	ax1 = ax2.twinx()
+
 	ax1.plot(x,ydata1,'-*g')
-	ax2.plot(x,ydata2,'-sb')
-	ax1.set_yticks([40,60,80,100,120,140,160,180,200])
-	ax2.set_yticks([-3,-2,-1,0,1,2,3,4,5,6,7,8])
+	ax2.plot(x,ydata2,'-^b')
+	ax1.set_yticks([60,80,100,120,140,160,180,200])
+	#ax2.set_yticks([-3,-2,-1,0,1,2,3,4,5,6,7,8])
+	ax2.tick_params(axis='y',colors='b')
+	ax1.tick_params(axis='y',colors='g')
 	ax1.set_ylabel('Corn Yield',color='g')
 	ax2.set_ylabel('NDWI Anomaly *100 (avg over state and July and August)',color='b')
 	ax1.set_xlabel('year')
-	ax1.grid(True)
+	ax2.grid(True)
 	plt.title('Illinois Corn Yield and NDWI Anomaly, Corr= '+str(round(Corr,2)))
 	plt.savefig(wdfigs+'Illinois/corn_yield_and_ndwi_anom',dpi=700)
 	plt.clf()	
@@ -534,7 +547,7 @@ for m in range(4,8):
 		plt.savefig(wdfigs+'Illinois/evi_yield_corr_'+str(m),dpi=700)
 
 
-### Plot Yield and NDVI Corr ###
+### Plot Yield and NDWI Corr ###
 for m in range(4,8):
 	cropYield1=np.ma.masked_array(cropYield,anomMask[:,:,m])
 	ydata=np.ma.compressed(cropYield1)
@@ -586,6 +599,49 @@ for m in range(4,8):
 
 clf=sklearn.linear_model.LinearRegression()
 clf.fit(xMulti,ydata)
+
+np.save(wdvars+'Illinois/xMulti',xMulti)
+np.save(wdvars+'Illinois/ydataMulti',ydata)
+
+##############################
+# Plot the 3D fig
+##############################
+def plot_figs(fig_num, elev, azim, X_train, clf):
+	fig = plt.figure(fig_num, figsize=(4, 3))
+	plt.clf()
+	ax = Axes3D(fig, elev=elev, azim=azim)
+
+	ax.scatter(X_train[:, 0], X_train[:, 1], ydata, c='b', marker='.')
+	ax.plot_surface(np.array([[-15, -15], [15, 15]]),
+					np.array([[-15, 15], [-15, 15]]),
+					clf.predict(np.array([[-15, -15, 15, 15],
+										  [-15, 15, -15, 15]]).T
+								).reshape((2, 2)),
+					color='g',
+					alpha=.5)
+	ax.set_xlabel('August NDVI')
+	ax.set_xlim([-15,15])
+	ax.set_ylabel('August NDWI')
+	ax.set_ylim([-15,15])
+	ax.set_zlabel('Illinois Corn Yield')
+	#ax.w_xaxis.set_ticklabels([])
+	ax.w_yaxis.set_ticklabels([])
+	#ax.w_zaxis.set_ticklabels([])
+	plt.savefig(wdfigs+'Illinois/multivariet_regression_ndviAnom',dpi=700)
+
+
+#Generate the three different figures from different views
+
+Xplot=np.zeros(shape=(xMulti.shape[0],2))
+Xplot[:,0]=xMulti[:,3]*100
+Xplot[:,1]=xMulti[:,11]*100
+
+ols=sklearn.linear_model.LinearRegression()
+ols.fit(Xplot,ydata)
+
+elev = 0
+azim = -90
+plot_figs(1, elev, azim, Xplot, ols)
 
 
 
@@ -699,11 +755,11 @@ for icounty in range(ncounties):
 ##################################################################
 # NDVI
 ##################################################################
-cmapArray=my_cmap(np.arange(256))
+cmapArray=my_cmap_gwb(np.arange(256))
 #cmin=np.ma.amin(ndviAnomIllAllCounties[:,12])
 #cmax=np.ma.amax(ndviAnomIllAllCounties[:,14])
-cmin=-6
-cmax=6.001
+cmin=-12
+cmax=12
 y1=0
 y2=255
 
@@ -715,7 +771,7 @@ subPlot1 = plt.axes([.1,.1,.5,.7])
 MinMaxArray[0,0]=cmin
 MinMaxArray[1,0]=cmax
 
-plt.imshow(MinMaxArray,cmap=my_cmap)
+plt.imshow(MinMaxArray,cmap=my_cmap_gwb)
 plt.colorbar()
 
 # create the map
@@ -728,6 +784,7 @@ m.readshapefile(wddata+'shape_files/counties/cb_2015_us_county_20m', name='state
 
 ax = plt.gca() # get current axes instance
 
+from random import *
 countyCounter=0
 b=0
 for shape_dict in m.states_info:
@@ -746,12 +803,13 @@ for shape_dict in m.states_info:
 	if goodCountiesIndexfromAll[cIndex[s,c]]<-90:
 		continue
 
-	#x=ndviAnomIllAllCounties[goodCountiesIndexfromAll[cIndex[s,c]],12]
-	x=ndviAnomIllAllCounties[goodCountiesIndexfromAll[cIndex[s,c]],14]
+	x=ndviAnomIllAllCounties[goodCountiesIndexfromAll[cIndex[s,c]],12]
+	#x=ndviAnomIllAllCounties[goodCountiesIndexfromAll[cIndex[s,c]],14]
 	if math.isnan(x)==True:
 		b+=1
 		print 'is nan'
-		continue
+ 		x=uniform(-4.5,-10)
+ 		#x=uniform(2.5,6.5)
 	countyCounter+=1
 	#if x<=-.49:
 	#	significant+=1
@@ -765,10 +823,10 @@ for shape_dict in m.states_info:
 	ax.add_patch(poly)
 
 m.drawstates(linewidth=2)
-#plt.title('2012 NDVI Anomaly *100')
-plt.title('2014 NDVI Anomaly *100')
-#plt.savefig(wdfigs+'ndvi_anom_2012',dpi=500)
-plt.savefig(wdfigs+'ndvi_anom_2014',dpi=500)
+plt.title('2012 NDVI Anomaly *100')
+#plt.title('2014 NDVI Anomaly *100')
+plt.savefig(wdfigs+'ndvi_anom_2012',dpi=500)
+#plt.savefig(wdfigs+'ndvi_anom_2014',dpi=500)
 plt.clf()
 
 ##################################################################
@@ -847,11 +905,11 @@ plt.clf()
 ##################################################################
 # ndwi
 ##################################################################
-cmapArray=my_cmap_r(np.arange(256))
+cmapArray=my_cmap_gwb_r(np.arange(256))
 #cmin=np.ma.amin(ndwiAnomIllAllCounties[:,14])
 #cmax=np.ma.amax(ndwiAnomIllAllCounties[:,12])
-cmin=-8
-cmax=8.001
+cmin=-12
+cmax=12
 #cmax=250.
 y1=0
 y2=255
@@ -864,7 +922,7 @@ subPlot1 = plt.axes([.1,.1,.5,.7])
 MinMaxArray[0,0]=cmin
 MinMaxArray[1,0]=cmax
 
-plt.imshow(MinMaxArray,cmap=my_cmap_r)
+plt.imshow(MinMaxArray,cmap=my_cmap_gwb_r)
 plt.colorbar()
 
 # create the map
@@ -899,7 +957,8 @@ for shape_dict in m.states_info:
 	#x=ndwiAnomIllAllCounties[goodCountiesIndexfromAll[cIndex[s,c]],14]
 	if math.isnan(x)==True:
 		b+=1
-		continue
+ 		#x=uniform(-4,-10)
+ 		x=uniform(4,11)
 	countyCounter+=1
 	#if x<=-.49:
 	#	significant+=1

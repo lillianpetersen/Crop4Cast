@@ -215,15 +215,15 @@ stateName=np.load(wdvars+'stateName.npy')
 
 # Celery task goes into start-up script
 
-badn='16N'
-goodn='15N'
+badn='15N'
+goodn='16N'
 #vlen=256
 #hlen=256
-start='2000-01-01'
-#start='2012-01-01'
+#start='2000-01-01'
+start='2012-01-01'
 end='2016-12-31'
 #end='2001-12-31'
-nyears=17
+nyears=5
 #nyears=1
 country='US'
 ##country='Ethiopia'
@@ -254,11 +254,7 @@ for icounty in range(len(countylats)):
 
 	if sName!='Illinois':
 		continue
-	#if cName!='Bureau' and cName!='Mason' and cName!='Cass' and cName!='Morgan' and cName!='Menard' and cName!='Sangamon' and cName!='Clark' and cName!='Coles':
-
-	#if clat>38:
-	#	continue
-	if cName!='Alexander':
+	if cName!='Mason' and cName!='Menard' and cName!='Cass' and cName!='Morgan' and cName!='Sangamon' and cName!='Alexander':
 		continue
 
 	print 'good=',goodn
