@@ -182,8 +182,9 @@ for cp in range(len(crop)):
 	plt.clf()
 	fig, ax2 = plt.subplots()
 	ax1 = ax2.twinx()
+	ax2.grid(True)
 	if country=='Ethiopia':
-		x=np.arange(2014.2,2018.2)
+		x=np.arange(2013.96,2017.96)
 		ydata=cropYield[cp,1:]
 	if country=='Morocco':
 		x=np.arange(2013.7,2018.7)
@@ -192,43 +193,43 @@ for cp in range(len(crop)):
 		x=np.arange(2013.7,2018.7)
 		ydata=cropYield[cp,:]
 
+
 	if cp==0:
 		label=crop[cp]+' Production'
-		ax1.bar(x,ydata,bar_width,color='g',label=label)
-		ax1.legend()
-		ax1.tick_params(axis='y',colors='g')
-		ax1.set_ylabel(crop[cp]+' Production, Gigatonnes',color='g')
+		ax2.bar(x,ydata,bar_width,color='g',label=label)
+		ax2.legend()
+		ax2.tick_params(axis='y',colors='g')
+		ax2.set_ylabel(crop[cp]+' Production, Gigatonnes',color='g')
 		if country=='Ethiopia':
-			#ax1.set_yticks([6000,6200,6400,6600,6800,7000,7200])
-			ax1.set_ylim([6000,7300])
+			#ax2.set_yticks([6000,6200,6400,6600,6800,7000,7200])
+			ax2.set_ylim([6000,7300])
 		if country=='Morocco':
-			ax1.set_yticks([0,1000,2000,3000,4000,5000,6000,7000,8000])
+			ax2.set_yticks([0,1000,2000,3000,4000,5000,6000,7000,8000])
 	if cp==1:
-		ax1.plot(x,ydata,'-^m')
-		ax1.tick_params(axis='y',colors='m')
-		ax1.set_ylabel(crop[cp]+' Production, Gigatonnes',color='m')
+		ax2.plot(x,ydata,'-^m')
+		ax2.tick_params(axis='y',colors='m')
+		ax2.set_ylabel(crop[cp]+' Production, Gigatonnes',color='m')
 		if country=='Ethiopia':
-			ax1.set_yticks([3100,3300,3500,3700,3900,4100])
+			ax2.set_yticks([3100,3300,3500,3700,3900,4100])
 		if country=='Morocco':
-			ax1.set_yticks([4000,5000,6000,7000,8000])
+			ax2.set_yticks([4000,5000,6000,7000,8000])
 	if cp==2:
-		ax1.plot(x,ydata,'-^y')
-		ax1.tick_params(axis='y',colors='y')
-		ax1.set_ylabel(crop[cp]+' Production, Gigatonnes',color='y')
+		ax2.plot(x,ydata,'-^y')
+		ax2.tick_params(axis='y',colors='y')
+		ax2.set_ylabel(crop[cp]+' Production, Gigatonnes',color='y')
 		if country=='Ethiopia':
-			ax1.set_yticks([3300,3400,3500,3600,3700,3800,3900,4000,4100,4200,4300])
+			ax2.set_yticks([3300,3400,3500,3600,3700,3800,3900,4000,4100,4200,4300])
 	
-	ax2.plot(xtime,ndviAvgPlot,'b*-',label='Monthly NDVI')
-	ax2.legend(bbox_to_anchor=(0.87, 0.9))
+	ax1.plot(xtime,ndviAvgPlot,'b*-',label='Monthly NDVI')
+	ax1.legend(bbox_to_anchor=(0.985, 0.935))
 	if country=='Ethiopia':
-		ax2.set_yticks([0.0,0.05,0.1,0.15,0.2,0.25,0.3,0.35])
+		ax1.set_yticks([0.0,0.05,0.1,0.15,0.2,0.25,0.3,0.35])
 	if country=='Morocco':
-		ax2.set_yticks([0.25,0.3,0.35,.4,.45,.5,.55,.6,.65])
-	ax2.set_ylabel('NDVI Monthly Average',color='b')
-	ax2.tick_params(axis='y',colors='b')
+		ax1.set_yticks([0.25,0.3,0.35,.4,.45,.5,.55,.6,.65])
+	ax1.set_ylabel('NDVI Monthly Average',color='b')
+	ax1.tick_params(axis='y',colors='b')
 
 	plt.title(country+': NDVI Monthly Average and '+crop[cp]+' Production, Corr='+str(round(Corr,2)))
-	ax2.grid(True)
 	plt.savefig(wdfigs+country+'/ndvi_monthlyavg_with_'+crop[cp],dpi=700)
 exit()
 

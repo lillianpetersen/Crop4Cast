@@ -100,11 +100,11 @@ for icounty in range(1):
 	#if cName!='Pike':
 	#	continue
 
-	sName='Tunisia'
-	cName='36.6409230209_9.0'
+	#sName='Tunisia'
+	#cName='36.6409230209_9.0'
 
-	#sName='ethiopia'
-	#cName='6.66509417453_36.777035542'
+	sName='Ethiopia'
+	cName='6.66509417453_36.777035542'
 
 	#sName='Morocco'
 	#cName='34.3957714404_-6.32664738573'
@@ -409,10 +409,11 @@ plt.savefig(wdfigs+sName+'/ndvi_monthlyAnom_months_'+sName,dpi=700)
 for y in range(5):
 	plt.clf()
 	plt.figure(1)
-	plt.imshow(ndviAnomAllPix[y,8,:,:]*100,cmap=my_cmap_gwb,vmin=-10,vmax=10)
+	plt.imshow(ndviAnomAllPix[y,7,:,:]*100,cmap=my_cmap_gwb,vmin=-10,vmax=10)
 	plt.colorbar()
-	plt.title(sName+' '+monthName[8]+' '+str(y+2013)+' NDVI Anomaly *100')
-	plt.savefig(wdfigs+sName+'/'+str(8)+monthName[8]+str(y+2013)+'_ndvi_month_anom',dpi=700)
+	plt.title(sName+' '+monthName[7]+' '+str(y+2013)+' NDVI Anomaly *100')
+	plt.savefig(wdfigs+sName+'/'+str(7)+monthName[7]+str(y+2013)+'_ndvi_month_anom',dpi=700)
+exit()
 
 np.save(wdvars+sName+'/ndviAnom',ndviAnom)
 np.save(wdvars+sName+'/eviAnom',eviAnom)

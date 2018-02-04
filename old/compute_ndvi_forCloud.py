@@ -2,58 +2,14 @@ import os
 import matplotlib.pyplot as plt
 import descarteslabs as dl
 import numpy as np
-import math
-import sys
 from sys import exit
 import sklearn
 from sklearn import svm
-import time
 from sklearn.preprocessing import StandardScaler
 from celery import Celery
 
-####################
-# Function         #
-####################
-### Running mean/Moving average
-def movingaverage(interval, window_size):
-    window = np.ones(int(window_size))/float(window_size)
-    return np.convolve(interval, window, 'same')
-    
-def variance(x):   
-    '''function to compute the variance (std dev squared)'''
-    xAvg=np.mean(x)
-    xOut=0.
-    for k in range(len(x)):
-        xOut=xOut+(x[k]-xAvg)**2
-    xOut=xOut/(k+1)
-    return xOut
-
-def rolling_median(var,window):
-    '''var: array-like. One dimension
-    window: Must be odd'''
-    n=len(var)
-    halfW=int(window/2)
-    med=np.zeros(shape=(var.shape))
-    for j in range(halfW,n-halfW):
-        med[j]=np.ma.median(var[j-halfW:j+halfW+1])
-     
-    for j in range(0,halfW):
-        w=2*j+1
-        med[j]=np.ma.median(var[j-w/2:j+w/2+1])
-        i=n-j-1
-        med[i]=np.ma.median(var[i-w/2:i+w/2+1])
-    
-    return med    
-    
-####################        
-
-#celery = Celery('compute_ndvi_forCloud', broker='redis://localhost:6379/0')
-#
-##wd='gs://lillian-bucket-storage/'
-wd='/Users/lilllianpetersen/Google Drive/science_fair/'
-
-
-# Celery task goes into start-up script
+# Run in parallel on Google Cloud
+celery = Celery('compute_ndvi_forCloud', broker='redis://localhost:6379/0')
 
 vlen=992
 hlen=992
@@ -66,18 +22,7 @@ padding = 16
 pixels = vlen+2*padding
 res = 120.0
 
-#vlen=100
-#hlen=100
-#padding=0
-#pixels=vlen+2*padding
-#    
-
-
-#matches=dl.places.find('united-states_washington')
-#matches=dl.places.find('united-states_iowa')
-#matches=dl.places.find('north-america_united-states')
-
-matches=dl.places.find('south-america_brazil_rondonia')
+matches=dl.places.find('united-states_illinois')
 aoi = matches[0]
 shape = dl.places.shape(aoi['slug'], geom='low')
 
@@ -85,14 +30,7 @@ dltiles = dl.raster.dltiles_from_shape(res, vlen, padding, shape)
 lonlist=np.zeros(shape=(len(dltiles['features'])))
 latlist=np.zeros(shape=(len(dltiles['features'])))
 
-for i in range(len(dltiles['features'])):
-    lonlist[i]=dltiles['features'][i]['geometry']['coordinates'][0][0][0]
-    latlist[i]=dltiles['features'][i]['geometry']['coordinates'][0][0][1]
-#
-features=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels,6))
-target=np.zeros(shape=(len(dltiles['features']),nyears,pixels*pixels))
-
-#@celery.task  
+@celery.task  
 def tile_function(dltile,makePlots=False):
    
     clas=["" for x in range(7)]

@@ -72,27 +72,28 @@ nyears=17
 nName=['15n','16n']
 makePlots=False
 
-ndviAnom=np.load(wdvars+'Illinois/keep/ndviAnom.npy')
-eviAnom=np.load(wdvars+'Illinois/keep/eviAnom.npy')
-ndwiAnom=np.load(wdvars+'Illinois/keep/ndwiAnom.npy')
-
-ndviAvg=np.load(wdvars+'Illinois/keep/ndviAvg.npy')
-eviAvg=np.load(wdvars+'Illinois/keep/eviAvg.npy')
-ndwiAvg=np.load(wdvars+'Illinois/keep/ndwiAvg.npy')
-
-#ndviAnom=np.zeros(shape=(3143,nyears,12))
-#eviAnom=np.zeros(shape=(3143,nyears,12))
-#ndwiAnom=np.zeros(shape=(3143,nyears,12))
+#ndviAnom=np.load(wdvars+'Illinois/keep/ndviAnom.npy')
+#eviAnom=np.load(wdvars+'Illinois/keep/eviAnom.npy')
+#ndwiAnom=np.load(wdvars+'Illinois/keep/ndwiAnom.npy')
 #
-#ndviAvg=np.zeros(shape=(3143,nyears,12))
-#eviAvg=np.zeros(shape=(3143,nyears,12))
-#ndwiAvg=np.zeros(shape=(3143,nyears,12))
+#ndviAvg=np.load(wdvars+'Illinois/keep/ndviAvg.npy')
+#eviAvg=np.load(wdvars+'Illinois/keep/eviAvg.npy')
+#ndwiAvg=np.load(wdvars+'Illinois/keep/ndwiAvg.npy')
+
+ndviAnom=np.zeros(shape=(3143,nyears,5))
+eviAnom=np.zeros(shape=(3143,nyears,5))
+ndwiAnom=np.zeros(shape=(3143,nyears,5))
+
+ndviAvg=np.zeros(shape=(3143,nyears,5))
+eviAvg=np.zeros(shape=(3143,nyears,5))
+ndwiAvg=np.zeros(shape=(3143,nyears,5))
 
 for icounty in range(len(countylats)):
 
 	clat=countylats[icounty]
 	clon=countylons[icounty]
 	cName=countyName[icounty].title()
+	cName=cName.replace(' ','_')
 	sName=stateName[icounty].title()
 
 	if sName!='Illinois':
@@ -101,85 +102,95 @@ for icounty in range(len(countylats)):
 	#if cName!='Pike':
 	#	continue
 	
-	if cName!='Mason' and cName!='Menard' and cName!='Cass' and cName!='Morgan' and cName!='Sangamon' and cName!='Alexander':
-		continue
+	#if cName=='Alexander' or cName=='Cass' or cName=='Mason' or cName=='Menard' or cName=='Morgan' or cName=='Sangamon':
+	#	continue
+	
+	#if cName!='Mason' and cName!='Menard' and cName!='Cass' and cName!='Morgan' and cName!='Sangamon' and cName!='Alexander':
+	#	continue
 
 	print '\n',sName,cName
 
 	goodn=np.ones(shape=(2),dtype=bool)
 
-	counterSum=np.zeros(shape=(nyears,12))
-	counterSumforAvg=np.zeros(shape=(nyears,12))
-	ndviAnomSum=np.zeros(shape=(nyears,12))
-	eviAnomSum=np.zeros(shape=(nyears,12))
-	ndwiAnomSum=np.zeros(shape=(nyears,12))
+	counterSum=np.zeros(shape=(nyears,5))
+	counterSumforAvg=np.zeros(shape=(nyears,5))
+	ndviAnomSum=np.zeros(shape=(nyears,5))
+	eviAnomSum=np.zeros(shape=(nyears,5))
+	ndwiAnomSum=np.zeros(shape=(nyears,5))
 
-	ndviAvgSum=np.zeros(shape=(nyears,12))
-	eviAvgSum=np.zeros(shape=(nyears,12))
-	ndwiAvgSum=np.zeros(shape=(nyears,12))
+	ndviAvgSum=np.zeros(shape=(nyears,5))
+	eviAvgSum=np.zeros(shape=(nyears,5))
+	ndwiAvgSum=np.zeros(shape=(nyears,5))
 
 
 	for n in range(2):
 
 		try:
-			ndviClimoNew=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndviClimoUnprocessed.npy')
-			climoCounterAllNew=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/climoCounterUnprocessed.npy')
-			ndviMonthAvgUNew=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndviMonthAvgUnprocessed.npy')
-			
-			eviClimoNew=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/eviClimoUnprocessed.npy')
-			eviMonthAvgUNew=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/eviMonthAvgUnprocessed.npy')
+			#ndviClimoNew=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2012-2017/ndviClimoUnprocessed.npy')
+			#climoCounterAllNew=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2012-2017/climoCounterUnprocessed.npy')
+			#ndviMonthAvgUNew=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2012-2017/ndviMonthAvgUnprocessed.npy')
+			#
+			#eviClimoNew=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2012-2017/eviClimoUnprocessed.npy')
+			#eviMonthAvgUNew=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2012-2017/eviMonthAvgUnprocessed.npy')
 		
-			ndwiClimoNew=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndwiClimoUnprocessed.npy')
-			ndwiMonthAvgUNew=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndwiMonthAvgUnprocessed.npy')
-			countyMaskNotBoolNew=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/countyMask.npy')
+			#ndwiClimoNew=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2012-2017/ndwiClimoUnprocessed.npy')
+			#ndwiMonthAvgUNew=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2012-2017/ndwiMonthAvgUnprocessed.npy')
+			#countyMaskNotBoolNew=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2012-2017/countyMask.npy')
+
+			#ndviClimo=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/ndviClimoUnprocessed.npy')
+			#climoCounterAll=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/climoCounterUnprocessed.npy')
+			#ndviMonthAvgU=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/ndviMonthAvgUnprocessed.npy')
+			#
+			#eviClimo=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/eviClimoUnprocessed.npy')
+			#eviMonthAvgU=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/eviMonthAvgUnprocessed.npy')
+			#
+			#ndwiClimo=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/ndwiClimoUnprocessed.npy')
+			#ndwiMonthAvgU=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/ndwiMonthAvgUnprocessed.npy')
+			#countyMaskNotBool=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/countyMask.npy')
+
+			ndviClimo=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndviClimoUnprocessed.npy')
+			climoCounterAll=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/climoCounterUnprocessed.npy')
+			ndviMonthAvgU=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndviMonthAvgUnprocessed.npy')
+			
+			eviClimo=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/eviClimoUnprocessed.npy')
+			eviMonthAvgU=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/eviMonthAvgUnprocessed.npy')
+		
+			ndwiClimo=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndwiClimoUnprocessed.npy')
+			ndwiMonthAvgU=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndwiMonthAvgUnprocessed.npy')
+			countyMaskNotBool=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/countyMask.npy')
 	
 		except:
 			print 'no',nName[n],'for', cName
 			goodn[n]=False
 			continue
 
-		ndviClimo=np.load(wdvars+sName+'/'+cName+'/old/'+nName[n]+'/ndviClimoUnprocessed.npy')
-		climoCounterAll=np.load(wdvars+sName+'/'+cName+'/old/'+nName[n]+'/climoCounterUnprocessed.npy')
-		ndviMonthAvgU=np.load(wdvars+sName+'/'+cName+'/old/'+nName[n]+'/ndviMonthAvgUnprocessed.npy')
-		
-		eviClimo=np.load(wdvars+sName+'/'+cName+'/old/'+nName[n]+'/eviClimoUnprocessed.npy')
-		eviMonthAvgU=np.load(wdvars+sName+'/'+cName+'/old/'+nName[n]+'/eviMonthAvgUnprocessed.npy')
-		
-		ndwiClimo=np.load(wdvars+sName+'/'+cName+'/old/'+nName[n]+'/ndwiClimoUnprocessed.npy')
-		ndwiMonthAvgU=np.load(wdvars+sName+'/'+cName+'/old/'+nName[n]+'/ndwiMonthAvgUnprocessed.npy')
-		countyMaskNotBool=np.load(wdvars+sName+'/'+cName+'/old/'+nName[n]+'/countyMask.npy')
-
-
-		if climoCounterAll.shape[0]==1:
-			print 'ONLY ONE YEAR!!!!!', nName[n]
-			continue
 
 		print 'running',nName[n]
 		
 		vlen=climoCounterAll.shape[2]
 		hlen=climoCounterAll.shape[3]
 
-		#climoCounterAll=np.zeros(shape=(climoCounterAllOld.shape))
-		#ndviClimo=np.zeros(shape=(ndviClimoOld.shape))
-		#ndviMonthAvgU=np.zeros(shape=(ndviMonthAvgUOld.shape))
-		#eviClimo=np.zeros(shape=(eviClimoOld.shape))
-		#eviMonthAvgU=np.zeros(shape=(eviMonthAvgUOld.shape))
-		#ndwiClimo=np.zeros(shape=(ndwiClimoOld.shape))
-		#ndwiMonthAvgU=np.zeros(shape=(ndwiMonthAvgUOld.shape))
-		#countyMaskNotBool=np.zeros(shape=(countyMaskNotBoolOld.shape))
+		#for y in range(12,17):
+		#	for m in range(5):
+		#		for v in range(vlen):
+		#			for h in range(hlen):
+		#				climoCounterAll[y,m,v,h]=climoCounterAllNew[y-12,m,v,h]
+		#				ndviMonthAvgU[y,m,v,h]=ndviMonthAvgUNew[y-12,m,v,h]
+		#				eviMonthAvgU[y,m,v,h]=eviMonthAvgUNew[y-12,m,v,h]
+		#				ndwiMonthAvgU[y,m,v,h]=ndwiMonthAvgUNew[y-12,m,v,h]
 
-		for y in range(12,17):
-			climoCounterAll[y]=climoCounterAllNew[y-12]
-			ndviMonthAvgU[y]=ndviMonthAvgU[y-12]
-			eviMonthAvgU[y]=eviMonthAvgU[y-12]
-			ndwiMonthAvgU[y]=ndwiMonthAvgU[y-12]
-
-		for m in range(4,9):
-			ndviClimo[m]+=ndviClimoNew[m]
-			eviClimo[m]+=eviClimoNew[m]
-			ndwiClimo[m]+=ndwiClimoNew[m]
-
-
+		#for m in range(5):
+		#	ndviClimo[m]+=ndviClimoNew[m]
+		#	eviClimo[m]+=eviClimoNew[m]
+		#	ndwiClimo[m]+=ndwiClimoNew[m]
+	
+		#np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndviClimoUnprocessed',ndviClimo)
+		#np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/eviClimoUnprocessed',eviClimo)
+		#np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndwiClimoUnprocessed',ndwiClimo)
+		#np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/climoCounterUnprocessed',climoCounter)
+		#np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndviMonthAvgUnprocessed',ndviMonthAvg)
+		#np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/eviMonthAvgUnprocessed',eviMonthAvg)
+		#np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndwiMonthAvgUnprocessed',ndwiMonthAvg)
 
 		countyMask=np.zeros(shape=(vlen,hlen),dtype=bool)
 		ndviMonthAvg=np.zeros(shape=(ndviMonthAvgU.shape))
@@ -190,12 +201,12 @@ for icounty in range(len(countylats)):
 			for h in range(hlen):
 				countyMask[v,h]=bool(countyMaskNotBool[v,h])
 		
-		climoCounter=np.zeros(shape=(12,vlen,hlen)) # number of days in every of each month
-		ndviAnomAllPix=np.zeros(shape=(nyears,12,vlen,hlen))
-		eviAnomAllPix=np.zeros(shape=(nyears,12,vlen,hlen))
-		ndwiAnomAllPix=np.zeros(shape=(nyears,12,vlen,hlen))
+		climoCounter=np.zeros(shape=(5,vlen,hlen)) # number of days in every of each month
+		ndviAnomAllPix=np.zeros(shape=(nyears,5,vlen,hlen))
+		eviAnomAllPix=np.zeros(shape=(nyears,5,vlen,hlen))
+		ndwiAnomAllPix=np.zeros(shape=(nyears,5,vlen,hlen))
 		
-		for m in range(4,9):
+		for m in range(5):
 			for v in range(vlen):
 				for h in range(hlen):
 					if countyMask[v,h]==1:
@@ -207,7 +218,7 @@ for icounty in range(len(countylats)):
 					ndwiClimo[m,v,h]=ndwiClimo[m,v,h]/climoCounter[m,v,h]
 
 		monthName=['January','Febuary','March','April','May','June','July','August','September','October','November','December']
-		#for m in range(4,9):
+		#for m in range(5):
 		#	plt.clf()
 		#	plt.imshow(ndviClimo[m,:,:],cmap=my_cmap,vmin=-.3,vmax=.8)
 		#	plt.colorbar()
@@ -216,7 +227,7 @@ for icounty in range(len(countylats)):
 
 				 
 		for y in range(nyears):
-			for m in range(4,9):
+			for m in range(5):
 				for v in range(vlen):
 					for h in range(hlen):
 						if countyMask[v,h]==1:
@@ -230,14 +241,14 @@ for icounty in range(len(countylats)):
 						ndwiAnomAllPix[y,m,v,h]=ndwiMonthAvg[y,m,v,h]-ndwiClimo[m,v,h]
 
 
-		#for m in range(4,9):
+		#for m in range(5):
 		#	plt.clf()
 		#	plt.imshow(ndviMonthAvg[2,m,:,:],cmap=my_cmap,vmin=-.3,vmax=.8)
 		#	plt.colorbar()
 		#	plt.title(sName+' '+monthName[m]+' 2015 Average NDVI')
 		#	plt.savefig(wdfigs+sName+'/'+str(m)+monthName[m]+'2015_ndvi_month_avg',dpi=700)
 
-		#ydata=np.ma.masked_array(ndviMonthAvg[14,7,:,:],countyMask)
+		#ydata=np.ma.masked_array(ndviMonthAvg[14,3,:,:],countyMask)
 		#plt.clf()
 		##plt.title(cName+' County 2014 August Monthly Average')
 		#plt.xticks([])
@@ -250,7 +261,7 @@ for icounty in range(len(countylats)):
 		#plt.colorbar(im, cax=cax)
 		#plt.savefig(wdfigs+sName+'/7_ndviMonthAvg_2014',dpi=700)
 		#
-		#ydata=np.ma.masked_array(ndviMonthAvg[12,7,:,:],countyMask)
+		#ydata=np.ma.masked_array(ndviMonthAvg[12,3,:,:],countyMask)
 		#plt.clf()
 		#plt.title('2012 NDVI August Average, '+cName+' '+sName)
 		#plt.xticks([])
@@ -263,7 +274,7 @@ for icounty in range(len(countylats)):
 		#plt.colorbar(im, cax=cax)
 		#plt.savefig(wdfigs+sName+'/7_ndviMonthAvg_2012',dpi=700)
 		#
-		#ydata=np.ma.masked_array(ndviClimo[7,:,:],countyMask)
+		#ydata=np.ma.masked_array(ndviClimo[3,:,:],countyMask)
 		#plt.clf()
 		#plt.title('August NDVI Climatology, '+cName+' '+sName)
 		#plt.xticks([])
@@ -282,18 +293,18 @@ for icounty in range(len(countylats)):
 #				os.makedirs(wdfigs+sName+'/'+cName)
 
 #			plt.clf()
-#			plt.imshow(ndviClimo[7,:,:], vmin=-.6, vmax=.9)
+#			plt.imshow(ndviClimo[3,:,:], vmin=-.6, vmax=.9)
 #			plt.colorbar()
 #			plt.title('ndvi August Climatology Ohio')
 #			plt.savefig(wdfigs+sName+'/'+cName+'/ndviClimo_Aug',dpi=700)
 #			
 #			plt.clf()
-#			plt.imshow(eviClimo[7,:,:], vmin=-.6, vmax=.9)
+#			plt.imshow(eviClimo[3,:,:], vmin=-.6, vmax=.9)
 #			plt.colorbar()
 #			plt.savefig(wdfigs+sName+'/'+cName+'/eviClimo_Aug',dpi=700)
 #			
 #			plt.clf()
-#			plt.imshow(ndwiClimo[7,:,:], vmin=-.6, vmax=.9)
+#			plt.imshow(ndwiClimo[3,:,:], vmin=-.6, vmax=.9)
 #			plt.colorbar()
 #			plt.title('ndwi August Climatology Ohio')
 #			plt.savefig(wdfigs+sName+'/'+cName+'/ndwiClimo_Aug',dpi=700)
@@ -301,7 +312,7 @@ for icounty in range(len(countylats)):
 #		if makePlots:
 #			plt.clf()
 #			plt.figure(1,figsize=(3,3))
-#			plt.plot(np.ma.compressed(ndviAnomAllPix[:,4:8,20,11]),'*-b')
+#			plt.plot(np.ma.compressed(ndviAnomAllPix[:,:,20,11]),'*-b')
 #			plt.plot(np.ma.compressed(ndviAnomAllPix[:,:,20,11]),'*-b')
 #			plt.ylim(-.25,.25)
 #			plt.title('ndvi Anomaly for pixel 20, 11')
@@ -309,7 +320,7 @@ for icounty in range(len(countylats)):
 #			
 #			plt.clf()
 #			plt.figure(1,figsize=(3,3))
-#			plt.plot(np.ma.compressed(ndviAnomAllPix[:,4:8,50,30]),'*-b')
+#			plt.plot(np.ma.compressed(ndviAnomAllPix[:,:,50,30]),'*-b')
 #			plt.plot(np.ma.compressed(ndviAnomAllPix[:,:,50,30]),'*-b')
 #			plt.ylim(-.25,.25)
 #			plt.title('ndvi Anomaly for pixel 50, 30')
@@ -326,7 +337,7 @@ for icounty in range(len(countylats)):
 		np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndwiMonthAvg',ndwiMonthAvg)
 
 		for y in range(nyears):
-			for m in range(4,9):
+			for m in range(5):
 				for v in range(vlen):
 					for h in range(hlen):
 						if countyMask[v,h]==1:
@@ -345,7 +356,7 @@ for icounty in range(len(countylats)):
 
 
 	for y in range(nyears):
-		for m in range(4,9):
+		for m in range(5):
 			ndviAnom[icounty,y,m]=ndviAnomSum[y,m]/counterSum[y,m]
 			eviAnom[icounty,y,m]=eviAnomSum[y,m]/counterSum[y,m]
 			ndwiAnom[icounty,y,m]=ndwiAnomSum[y,m]/counterSum[y,m]
@@ -354,8 +365,10 @@ for icounty in range(len(countylats)):
 			eviAvg[icounty,y,m]=eviAvgSum[y,m]/counterSumforAvg[y,m]
 			ndwiAvg[icounty,y,m]=ndwiAvgSum[y,m]/counterSumforAvg[y,m]
 	
-	print ndviAnom[icounty,12,4:9]
-	print ndviAvg[icounty,12,4:9]
+	print ndviAnom[icounty,12,:]
+	print ndviAvg[icounty,12,:]
+	print eviAnom[icounty,12,:]
+	print ndwiAnom[icounty,12,:]
 
 sName='Illinois'
 np.save(wdvars+sName+'/ndviAnom',ndviAnom)
@@ -368,9 +381,9 @@ np.save(wdvars+sName+'/ndwiAvg',ndwiAvg)
 
 
 #ndviAvgPlot=np.ma.compressed(ndviAvg[:4])
-#x=np.zeros(shape=(nyears,12))
+#x=np.zeros(shape=(nyears,5))
 #for y in range(nyears):
-#	for m in range(4,9):
+#	for m in range(5):
 #		x[y,m]=(y+2013)+(m+1.5)/12
 #x=np.ma.compressed(x)
 #plt.clf()
@@ -380,9 +393,9 @@ np.save(wdvars+sName+'/ndwiAvg',ndwiAvg)
 #plt.savefig(wdfigs+sName+'/ndvi_monthlyavg_over_time_'+sName,dpi=700)
 #
 #plt.clf()
-#x=np.zeros(shape=(nyears,12))
+#x=np.zeros(shape=(nyears,5))
 #for y in range(nyears):
-#	for m in range(4,9):
+#	for m in range(5):
 #		x[y,m]=m+1
 #	plt.plot(x[y],ndviAvg[0,y],'b*-')
 #
@@ -392,9 +405,9 @@ np.save(wdvars+sName+'/ndwiAvg',ndwiAvg)
 #
 #	
 #ndviAnomPlot=np.ma.compressed(ndviAnom[:4])
-#x=np.zeros(shape=(nyears,12))
+#x=np.zeros(shape=(nyears,5))
 #for y in range(nyears):
-#	for m in range(4,9):
+#	for m in range(5):
 #		x[y,m]=(y+2013)+(m+1.5)/12
 #x=np.ma.compressed(x)
 #plt.clf()
@@ -404,9 +417,9 @@ np.save(wdvars+sName+'/ndwiAvg',ndwiAvg)
 #plt.savefig(wdfigs+sName+'/ndvi_monthlyAnom_over_time_'+sName,dpi=700)
 #
 #plt.clf()
-#x=np.zeros(shape=(nyears,12))
+#x=np.zeros(shape=(nyears,5))
 #for y in range(nyears):
-#	for m in range(4,9):
+#	for m in range(5):
 #		x[y,m]=m+1
 #	plt.plot(x[y],ndviAnom[0,y],'b*-')
 #

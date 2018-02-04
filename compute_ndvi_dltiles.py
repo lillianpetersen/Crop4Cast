@@ -215,48 +215,31 @@ stateName=np.load(wdvars+'stateName.npy')
 
 # Celery task goes into start-up script
 
-#pixels=512
+country='Madagascar'
+
 start='2000-01-01'
 end='2018-01-03'
-#end='2001-12-31'
 nyears=18
-#nyears=1
-#country='US'
-#country='Ethiopia'
 makePlots=False
 print 'makePlots=',makePlots
 padding = 0
-#pixels = pixels+2*padding
-#res = 30
 res=120
 
-#pixels=100
-#pixels=100
-#padding=0
-#pixels=pixels+2*padding
-#	
 badarrays=0
-#for icounty in range(len(countylats)):
 
-#startlon=-5.210000
-#startlat=33.849857
+f=open(wddata+'africa_latlons.csv')
+for line in f:
+	tmp=line.split(',')
+	if tmp[0]==country:
+		startlat=float(tmp[1])
+		startlon=float(tmp[2])
+		pixels=int(tmp[3])
 
-#country='Morocco'
-#startlon=-6.21024
-#startlat=34.621505
+print startlon,startlat,pixels
 
-#country='Egypt'
-#startlon=30.789474
-#startlat=29.328869
-
-country='Tunisia'
-pixels=1024
-startlon=9.3296
-startlat=36.943144
-
-#country='Ethiopia'
-#pixels=2048
-#dltile=dl.raster.dltile_from_latlon(7.19669,37.529457,res,pixels,padding)
+dltile=dl.raster.dltile_from_latlon(startlat,startlon,res,pixels,padding)
+print dltile
+exit()
 print country
 
 dltile=dl.raster.dltile_from_latlon(startlat,startlon,res,pixels,padding)

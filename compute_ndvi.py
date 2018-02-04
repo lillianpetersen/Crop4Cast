@@ -164,38 +164,38 @@ def ltk_cloud_mask(X, get_rgb=False):
 	return Y
 
 def make_cmap(colors, position=None, bit=False):
-    '''
-    make_cmap takes a list of tuples which contain RGB values. The RGB
-    values may either be in 8-bit [0 to 255] (in which bit must be set to
-    True when called) or arithmetic [0 to 1] (default). make_cmap returns
-    a cmap with equally spaced colors.
-    Arrange your tuples so that the first color is the lowest value for the
-    colorbar and the last is the highest.
-    position contains values from 0 to 1 to dictate the location of each color.
-    '''
-    import matplotlib as mpl
-    import numpy as np
-    bit_rgb = np.linspace(0,1,256)
-    if position == None:
-        position = np.linspace(0,1,len(colors))
-    else:
-        if len(position) != len(colors):
-            sys.exit("position length must be the same as colors")
-        elif position[0] != 0 or position[-1] != 1:
-            sys.exit("position must start with 0 and end with 1")
-    if bit:
-        for i in range(len(colors)):
-            colors[i] = (bit_rgb[colors[i][0]],
-                         bit_rgb[colors[i][1]],
-                         bit_rgb[colors[i][2]])
-    cdict = {'red':[], 'green':[], 'blue':[]}
-    for pos, color in zip(position, colors):
-        cdict['red'].append((pos, color[0], color[0]))
-        cdict['green'].append((pos, color[1], color[1]))
-        cdict['blue'].append((pos, color[2], color[2]))
+	'''
+	make_cmap takes a list of tuples which contain RGB values. The RGB
+	values may either be in 8-bit [0 to 255] (in which bit must be set to
+	True when called) or arithmetic [0 to 1] (default). make_cmap returns
+	a cmap with equally spaced colors.
+	Arrange your tuples so that the first color is the lowest value for the
+	colorbar and the last is the highest.
+	position contains values from 0 to 1 to dictate the location of each color.
+	'''
+	import matplotlib as mpl
+	import numpy as np
+	bit_rgb = np.linspace(0,1,256)
+	if position == None:
+		position = np.linspace(0,1,len(colors))
+	else:
+		if len(position) != len(colors):
+		    sys.exit("position length must be the same as colors")
+		elif position[0] != 0 or position[-1] != 1:
+		    sys.exit("position must start with 0 and end with 1")
+	if bit:
+		for i in range(len(colors)):
+		    colors[i] = (bit_rgb[colors[i][0]],
+		                 bit_rgb[colors[i][1]],
+		                 bit_rgb[colors[i][2]])
+	cdict = {'red':[], 'green':[], 'blue':[]}
+	for pos, color in zip(position, colors):
+		cdict['red'].append((pos, color[0], color[0]))
+		cdict['green'].append((pos, color[1], color[1]))
+		cdict['blue'].append((pos, color[2], color[2]))
 
-    cmap = mpl.colors.LinearSegmentedColormap('my_colormap',cdict,256)
-    return cmap
+	cmap = mpl.colors.LinearSegmentedColormap('my_colormap',cdict,256)
+	return cmap
 
 colors = [(.4,0,.6), (0,0,.7), (0,.6,1), (.9,.9,1), (1,.8,.8), (1,1,0), (.8,1,.5), (.1,.7,.1), (.1,.3,.1)] 
 my_cmap = make_cmap(colors)
@@ -219,12 +219,12 @@ badn='15N'
 goodn='16N'
 #vlen=256
 #hlen=256
-#start='2000-01-01'
-start='2012-01-01'
+start='2000-01-01'
+#start='2012-01-01'
 end='2016-12-31'
 #end='2001-12-31'
-nyears=5
-#nyears=1
+nyears=17
+#nyears=5
 country='US'
 ##country='Ethiopia'
 makePlots=False
@@ -251,16 +251,39 @@ for icounty in range(len(countylats)):
 	sNamel=sName.lower()
 
 	cNamel=cNamel.replace(' ','-')
+	cName=cName.replace(' ','_')
 
 	if sName!='Illinois':
 		continue
-	if cName!='Mason' and cName!='Menard' and cName!='Cass' and cName!='Morgan' and cName!='Sangamon' and cName!='Alexander':
+	
+	#if cName!='Adams':
+	#	continue
+
+#	if cName!='Cass' and cName!='Mason' and cName!='Menard' and cName!='Morgan' and cName!='Sangamon':
+#		continue
+
+	if cName!='Alexander':
 		continue
 
 	print 'good=',goodn
 	#print sName,cName,clat,clon
 	if cNamel=='de-kalb':
 		cNamel='dekalb'
+	if cNamel=='la-salle':
+		cNamel='lasalle'
+	if cNamel=='du-page':
+		cNamel='dupage'
+
+	#try:
+	#	#testSeptember=np.load(wdvars+sName+'/'+cName+'/'+goodn+'/no_september/ndviMonthAvgUnprocessed.npy')
+	#	testevi=np.load(wdvars+sName+'/'+cName+'/'+goodn+'/eviClimoUnprocessed.npy')
+	#except:
+	#	print sName,cName
+	#	print 'no', goodn, 'for', cName
+	#	continue
+	#if np.amax(testevi[:])!=0:
+	#	print 'yes eviclimo'
+	#	continue
 
 	try:
 		matches=dl.places.find('united-states_'+sNamel+'_'+cNamel)
@@ -268,13 +291,15 @@ for icounty in range(len(countylats)):
 		shape = dl.places.shape(aoi['slug'], geom='low')
 	except:
 		print 'could not find'
-	
+		exit()
+
 	images= dl.metadata.search(
 		products='modis:09:CREFL',
 		start_time=start,
 		end_time=end,
 		cloud_fraction=.8,
 		limit=10000,
+		#limit=30,
 		place=aoi['slug']
 		)
 
@@ -284,8 +309,8 @@ for icounty in range(len(countylats)):
 	n_images = len(images['features'])
 	print('Number of image matches: %d' % n_images)
 	#avail_bands = dl.raster.get_bands_by_constellation("L5").keys()
-	avail_bands = dl.raster.get_bands_by_constellation("MO").keys()
-	print avail_bands 
+	#avail_bands = dl.raster.get_bands_by_constellation("MO").keys()
+	#print avail_bands 
 	
 	#band_info=dl.metadata.bands(products='landsat:LT05:PRE:TOAR')
 	band_info=dl.metadata.bands(products='modis:09:CREFL')
@@ -373,7 +398,7 @@ for icounty in range(len(countylats)):
 		if monthAll[j]!=monthAll[j-1] and j!=0:
 			d=-1
 			if monthAll[j-1]!=5 and monthAll[j-1]!=6 and monthAll[j-1]!=7 and monthAll[j-1]!=8 and monthAll[j-1]!=9:
-			#if monthAll[j-1]!=6:
+			#if monthAll[j-1]!=9:
 				continue
 			for v in range(vlen):
 				for h in range(hlen):
@@ -392,8 +417,8 @@ for icounty in range(len(countylats)):
 			Mask=np.ones(shape=(100,vlen,hlen)) 
 			ndwiAll=np.zeros(shape=(100,vlen,hlen))
 	
-		if monthAll[j]!=5 and monthAll[j]!=6 and monthAll[j]!=7 and monthAll[j]!=8 and monthAll[j-1]!=9:
-		#if monthAll[j]!=6:
+		if monthAll[j]!=5 and monthAll[j]!=6 and monthAll[j]!=7 and monthAll[j]!=8 and monthAll[j]!=9:
+		#if monthAll[j]!=9:
 			d=-1
 			continue
 	
@@ -688,21 +713,45 @@ for icounty in range(len(countylats)):
 			plt.title('Visible: '+cName+', '+sName+', '+str(date), fontsize=20)
 			plt.savefig(wdfigs+sName+'/'+cName+'/visual_'+str(date)+'_'+str(k)+'.pdf')
 	
-		
+
+	###########################################################
+	# turn into 5 month long array
+	###########################################################
+	climoCounterAllfive=np.zeros(shape=(nyears,5,vlen,hlen))
+	ndviMonthAvgUfive=np.zeros(shape=(nyears,5,vlen,hlen))
+	eviMonthAvgUfive=np.zeros(shape=(nyears,5,vlen,hlen))
+	ndwiMonthAvgUfive=np.zeros(shape=(nyears,5,vlen,hlen))
+	
+	ndviClimofive=np.zeros(shape=(5,vlen,hlen))
+	eviClimofive=np.zeros(shape=(5,vlen,hlen))
+	ndwiClimofive=np.zeros(shape=(5,vlen,hlen))
+	
+	for y in range(nyears):
+		for m in range(5):
+			climoCounterAllfive[y,m,:,:]=climoCounter[y,m+4,:,:]
+			ndviMonthAvgUfive[y,m,:,:]=ndviMonthAvg[y,m+4,:,:]
+			eviMonthAvgUfive[y,m,:,:]=eviMonthAvg[y,m+4,:,:]
+			ndwiMonthAvgUfive[y,m,:,:]=ndwiMonthAvg[y,m+4,:,:]
+	
+	for m in range(5):
+		ndviClimofive[m,:,:]=ndviClimo[m+4,:,:]
+		eviClimofive[m,:,:]=eviClimo[m+4,:,:]
+		ndwiClimofive[m,:,:]=ndwiClimo[m+4,:,:]
+	
 	########################
 	# Save variables	   #
 	######################## 
 	
-	if not os.path.exists(wdvars+sName+'/'+cName+'/'+goodn):
-		os.makedirs(wdvars+sName+'/'+cName+'/'+goodn)
+	if not os.path.exists(wdvars+sName+'/'+cName+'/'+goodn+'/'):
+		os.makedirs(wdvars+sName+'/'+cName+'/'+goodn+'/')
 			 
-	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/ndviClimoUnprocessed',ndviClimo)
-	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/eviClimoUnprocessed',eviClimo)
-	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/ndwiClimoUnprocessed',ndwiClimo)
-	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/climoCounterUnprocessed',climoCounter)
-	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/ndviMonthAvgUnprocessed',ndviMonthAvg)
-	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/eviMonthAvgUnprocessed',eviMonthAvg) 
-	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/ndwiMonthAvgUnprocessed',ndwiMonthAvg)
+	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/ndviClimoUnprocessed',ndviClimofive)
+	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/eviClimoUnprocessed',eviClimofive)
+	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/ndwiClimoUnprocessed',ndwiClimofive)
+	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/climoCounterUnprocessed',climoCounterAllfive)
+	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/ndviMonthAvgUnprocessed',ndviMonthAvgUfive)
+	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/eviMonthAvgUnprocessed',eviMonthAvgUfive) 
+	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/ndwiMonthAvgUnprocessed',ndwiMonthAvgUfive)
 	np.save(wdvars+sName+'/'+cName+'/'+goodn+'/countyMask',countyMask)
 
 #for tile in range(len(dltiles['features'])):

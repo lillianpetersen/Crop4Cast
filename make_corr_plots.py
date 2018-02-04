@@ -125,11 +125,14 @@ cropYieldAll=cropYieldAll[:,100:117,0]
 countyName=np.load(wdvars+'countyName.npy')
 stateName=np.load(wdvars+'stateName.npy')
 
-ndviAnomAll=np.load(wdvars+'Illinois/keep/ndviAnom.npy')
-eviAnomAll=np.load(wdvars+'Illinois/keep/eviAnom.npy')
-ndwiAnomAll=np.load(wdvars+'Illinois/keep/ndwiAnom.npy')
+#ndviAnomAll=np.load(wdvars+'Illinois/keep/ndviAnom.npy')
+#eviAnomAll=np.load(wdvars+'Illinois/keep/eviAnom.npy')
+#ndwiAnomAll=np.load(wdvars+'Illinois/keep/ndwiAnom.npy')
 cIndex=np.load(wdvars+'cIndex.npy')
 
+ndviAnomAll=np.load(wdvars+'Illinois/ndviAnom.npy')
+eviAnomAll=np.load(wdvars+'Illinois/eviAnom.npy')
+ndwiAnomAll=np.load(wdvars+'Illinois/ndwiAnom.npy')
 
 countiesMask=np.zeros(shape=(3143),dtype=bool)
 for icounty in range(3143):
@@ -808,8 +811,9 @@ for shape_dict in m.states_info:
 	if math.isnan(x)==True:
 		b+=1
 		print 'is nan'
- 		x=uniform(-4.5,-10)
- 		#x=uniform(2.5,6.5)
+ 		#x=uniform(-4.5,-10)
+ 		##x=uniform(2.5,6.5)
+		continue
 	countyCounter+=1
 	#if x<=-.49:
 	#	significant+=1
@@ -957,8 +961,9 @@ for shape_dict in m.states_info:
 	#x=ndwiAnomIllAllCounties[goodCountiesIndexfromAll[cIndex[s,c]],14]
 	if math.isnan(x)==True:
 		b+=1
- 		#x=uniform(-4,-10)
- 		x=uniform(4,11)
+ 		##x=uniform(-4,-10)
+ 		#x=uniform(4,11)
+		continue
 	countyCounter+=1
 	#if x<=-.49:
 	#	significant+=1
