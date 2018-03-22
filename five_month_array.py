@@ -16,12 +16,12 @@ countylons=np.load(wdvars+'county_lons.npy')
 countyName=np.load(wdvars+'countyName.npy')
 stateName=np.load(wdvars+'stateName.npy')
 
-nyears=12
+nyears=17
 nName=['15n','16n']
 makePlots=False
 
 
-for icounty in range(657,len(countylats)):
+for icounty in range(len(countylats)):
 
 	clat=countylats[icounty]
 	clon=countylons[icounty]
@@ -31,8 +31,10 @@ for icounty in range(657,len(countylats)):
 
 	if sName!='Illinois':
 		continue
-	if cName!='Cass' and cName!='Mason' and cName!='Menard' and cName!='Morgan' and cName!='Sangamon':
+	if cName!='Bureau':
 		continue
+	#if cName!='Cass' and cName!='Mason' and cName!='Menard' and cName!='Morgan' and cName!='Sangamon':
+	#	continue
 
 	for n in range(2):
 		if n==0: 
@@ -40,27 +42,28 @@ for icounty in range(657,len(countylats)):
 			continue
 
 		try:
-			ndviClimoAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/ndviClimoUnprocessed.npy')
-			climoCounterAllAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/climoCounterUnprocessed.npy')
-			ndviMonthAvgUAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/ndviMonthAvgUnprocessed.npy')
-			
-			eviClimoAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/eviClimoUnprocessed.npy')
-			eviMonthAvgUAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/eviMonthAvgUnprocessed.npy')
+			if n==1: #or cName=='Adams' or cName=='Cass':
+				ndviClimoAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/all_months/ndviClimoUnprocessed.npy')
+				climoCounterAllAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/all_months/climoCounterUnprocessed.npy')
+				ndviMonthAvgUAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/all_months/ndviMonthAvgUnprocessed.npy')
+				
+				eviClimoAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/all_months/eviClimoUnprocessed.npy')
+				eviMonthAvgUAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/all_months/eviMonthAvgUnprocessed.npy')
 
-			ndwiClimoAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/ndwiClimoUnprocessed.npy')
-			ndwiMonthAvgUAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/ndwiMonthAvgUnprocessed.npy')
+				ndwiClimoAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/all_months/ndwiClimoUnprocessed.npy')
+				ndwiMonthAvgUAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/all_months/ndwiMonthAvgUnprocessed.npy')
 
-			#elif n==0:
-			#	ndviClimoAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndviClimoUnprocessed.npy')
-			#	climoCounterAllAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/climoCounterUnprocessed.npy')
-			#	ndviMonthAvgUAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndviMonthAvgUnprocessed.npy')
-			#	
-			#	eviClimoAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/eviClimoUnprocessed.npy')
-			#	eviMonthAvgUAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/eviMonthAvgUnprocessed.npy')
+			elif n==0:
+				ndviClimoAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndviClimoUnprocessed.npy')
+				climoCounterAllAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/climoCounterUnprocessed.npy')
+				ndviMonthAvgUAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndviMonthAvgUnprocessed.npy')
+				
+				eviClimoAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/eviClimoUnprocessed.npy')
+				eviMonthAvgUAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/eviMonthAvgUnprocessed.npy')
 
-			#	ndwiClimoAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndwiClimoUnprocessed.npy')
-			#	ndwiMonthAvgUAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndwiMonthAvgUnprocessed.npy')
-			#	countyMaskNotBoolAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/countyMask.npy')
+				ndwiClimoAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndwiClimoUnprocessed.npy')
+				ndwiMonthAvgUAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndwiMonthAvgUnprocessed.npy')
+				countyMaskNotBoolAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/countyMask.npy')
 
 		except:
 			print 'no',nName[n],'for', cName
@@ -99,14 +102,15 @@ for icounty in range(657,len(countylats)):
 			eviClimo[m,:,:]=eviClimoAllMonths[m+4,:,:]
 			ndwiClimo[m,:,:]=ndwiClimoAllMonths[m+4,:,:]
 
+
 		###########################################################
 		# save 5 month variables
 		###########################################################
-		np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/ndviClimoUnprocessed',ndviClimo)
-		np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/eviClimoUnprocessed',eviClimo)
-		np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/ndwiClimoUnprocessed',ndwiClimo)
-		np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/climoCounterUnprocessed',climoCounterAllAllMonths)
-		np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/ndviMonthAvgUnprocessed',ndviMonthAvgU)
-		np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/eviMonthAvgUnprocessed',eviMonthAvgU)
-		np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/2000-2012/ndwiMonthAvgUnprocessed',ndwiMonthAvgU)
+		np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndviClimoUnprocessed',ndviClimo)
+		np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/eviClimoUnprocessed',eviClimo)
+		np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndwiClimoUnprocessed',ndwiClimo)
+		np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/climoCounterUnprocessed',climoCounterAll)
+		np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndviMonthAvgUnprocessed',ndviMonthAvgU)
+		np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/eviMonthAvgUnprocessed',eviMonthAvgU)
+		np.save(wdvars+sName+'/'+cName+'/'+nName[n]+'/ndwiMonthAvgUnprocessed',ndwiMonthAvgU)
 

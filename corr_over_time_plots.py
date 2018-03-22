@@ -12,19 +12,20 @@ from operator import and_
 from mpl_toolkits.basemap import Basemap
 from matplotlib.patches import Polygon
 
-corrs=np.array([[-0.06,0.12,0.58,0.67], #NDVI
-	[-0.09,0.13,0.55,0.67], #EVI
-	[0.11,-0.10,-0.58,-0.72]]) #NDWI
+corrs=np.array([[-0.06,0.12,0.58,0.67,.24], #NDVI
+	[-0.09,0.13,0.55,0.67,.26], #EVI
+	[0.11,-0.10,-0.58,-0.72,-.32]]) #NDWI
 
-multiCorr=np.array([0.8425,0.8425,0.8425,0.8425])
+multiCorr=np.array([0.863982,0.863982,0.863982,0.863982,0.863982])
 
-slopes=np.array([[-0.60,0.61,4.0,4.73], #NDVI
-	[-0.84,0.49,3.6,3.74], #EVI
-	[1.1,-0.48,-3.3,-4.33]]) #NDWI
+slopes=np.array([[-0.60,0.61,4.0,4.73,1.18], #NDVI
+	[-0.84,0.49,3.6,3.74,.86], #EVI
+	[1.1,-0.48,-3.3,-4.33,-1.66]]) #NDWI
 
-xint=[5,6,7,8]
-x=['May','June','July','August']
+xint=[5,6,7,8,9]
+x=['May','June','July','August','September']
 plt.clf()
+plt.figure(10,figsize=(10,8))
 ax=plt.gca()
 plt.plot(xint,corrs[1],'^-y',label='EVI')
 plt.plot(xint,corrs[0],'s-g',label='NDVI')
@@ -32,8 +33,8 @@ plt.plot(xint,-1*corrs[2],'+-b',label='NDWI*(-1)')
 plt.plot(xint,multiCorr,'-r',label='Mutivariate Regression')
 plt.legend()
 plt.ylim(-.20,1.0001)
-ax.set_xticks([5,6,7,8])
-ax.set_xticklabels(['May','June','July','August'])
+ax.set_xticks([5,6,7,8,9])
+ax.set_xticklabels(['May','June','July','August','September'])
 plt.title('Correlations Over Time')
 plt.ylabel('Correlations to Corn Yield')
 plt.grid(True)
@@ -46,8 +47,8 @@ plt.plot(xint,slopes[1],'^-y',label='EVI')
 plt.plot(xint,slopes[0],'s-g',label='NDVI')
 plt.plot(xint,-1*slopes[2],'+-b',label='NDWI*(-1)')
 plt.legend(loc='lower right')
-ax.set_xticks([5,6,7,8])
-ax.set_xticklabels(['May','June','July','August'])
+ax.set_xticks([5,6,7,8,9])
+ax.set_xticklabels(['May','June','July','August','September'])
 plt.title('Slopes Over Time')
 plt.ylabel('Crop Yields/(Satellite Index *100)')
 plt.grid(True)

@@ -240,7 +240,7 @@ res=120
 #pixels=vlen+2*padding
 #	
 badarrays=0
-for icounty in range(len(countylats)):
+for icounty in range(598,len(countylats)):
 
 	clat=countylats[icounty]
 	clon=countylons[icounty]
@@ -256,14 +256,14 @@ for icounty in range(len(countylats)):
 	if sName!='Illinois':
 		continue
 	
-	#if cName!='Adams':
-	#	continue
+	if cName!='De_Witt':
+		continue
 
 #	if cName!='Cass' and cName!='Mason' and cName!='Menard' and cName!='Morgan' and cName!='Sangamon':
 #		continue
 
-	if cName!='Alexander':
-		continue
+	#if cName!='Alexander':
+	#	continue
 
 	print 'good=',goodn
 	#print sName,cName,clat,clon
@@ -369,6 +369,9 @@ for icounty in range(len(countylats)):
 		for h in range(hlen):
 			if arrNDVI1[v,h,0]==0 and arrNDVI2[v,h,0]==0 and arrNDVI3[v,h,0]==0:
 				countyMask[v,h]=1
+
+	#np.save(wdvars+sName+'/'+cName+'/'+goodn+'/countyMask',countyMask)
+	#exit()
 
 	####################
 	# Define Variables #
@@ -768,13 +771,6 @@ for icounty in range(len(countylats)):
 #		dltile=dltiles['features'][i]
 #		tile_function(dltile)
 #		
-		
-		
-		
-		
-		
-		
-		
 		
 		
 		

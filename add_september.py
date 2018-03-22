@@ -32,6 +32,9 @@ for icounty in range(len(countylats)):
 	if sName!='Illinois':
 		continue
 
+	if cName!='De_Witt':
+		continue
+
 	for n in range(2):
 
 		try:
@@ -44,7 +47,6 @@ for icounty in range(len(countylats)):
 
 			ndwiClimoSep=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/september/ndwiClimoUnprocessed.npy')
 			ndwiMonthAvgUSep=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/september/ndwiMonthAvgUnprocessed.npy')
-			countyMaskNotBoolSep=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/september/countyMask.npy')
 
 
 			ndviClimoAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/no_september/ndviClimoUnprocessed.npy')
@@ -56,7 +58,6 @@ for icounty in range(len(countylats)):
 
 			ndwiClimoAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/no_september/ndwiClimoUnprocessed.npy')
 			ndwiMonthAvgUAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/no_september/ndwiMonthAvgUnprocessed.npy')
-			countyMaskNotBoolAllMonths=np.load(wdvars+sName+'/'+cName+'/'+nName[n]+'/no_september/countyMask.npy')
 
 		except:
 			print 'no',nName[n],'for', cName
