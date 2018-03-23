@@ -117,25 +117,9 @@ slopesAll=np.zeros(shape=(48))
 bIntAll=np.zeros(shape=(48))
 maxMonthAll=np.zeros(shape=(48))
 
-#country='Tunisia'
-#cropYield=np.array([[975,1513,912,1050,1200],[70,340,140,100,240]]) 
-#crop=['Wheat','Olive Oil']
-
-#country='Morocco'
-#cropYield=np.array([[6934,5116,8064,2731,6250],[2723,1638,3400,620,2000]]) #Wheat
-#crop=['Wheat','Barley']
-
-#country='Ethiopia'
-#cropYield=np.array([[6492,7235,6800,6350,6500],[3925,4232,3500,3900,4200],[3829,4339,3900,3600,3765]])
-#crop=['Corn','Wheat','Sorghum']
-
-#country='Algeria'
-#cropYield=np.array([[3302,1900,2700,2000,2400],[1500,1300,1300,1000,968]])
-#crop=['Wheat','Barley']
-
 for icountry in range(47):
 	countryNum=str(icountry+1)
-	countryNum='33'
+	countryNum='42'
 	if countryNum=='26':
 		continue
 	
@@ -158,9 +142,21 @@ for icountry in range(47):
 			if twoSeasons!='no':
 				corrMonth1=int(seasons[1])
 				corrMonth2=int(seasons[2])
-			print '\n',country,countryNum
 			break
+
+	try:
+		ndviAnom2018=np.load(wdvars+country+'/2018/ndviAnom.npy')
+		eviAnom2018=np.load(wdvars+country+'/2018/eviAnom.npy')
+		ndwiAnom2018=np.load(wdvars+country+'/2018/ndwiAnom.npy')
+
+		ndviAvg2018=np.load(wdvars+country+'/2018/ndviAvg.npy')
+		eviAvg2018=np.load(wdvars+country+'/2018/eviAvg.npy')
+		ndwiAvg2018Normal=np.load(wdvars+country+'/2018/ndwiAvg.npy')
+	except:
+		continue
 	
+	print '\n',country,countryNum
+
 	files = [filename for filename in os.listdir(cropDataDir) if filename.startswith(countryl+'-')]
 	crop=[]
 	for n in files:
@@ -210,17 +206,6 @@ for icountry in range(47):
 	ndviAvg=np.load(wdvars+country+'/ndviAvg.npy')
 	eviAvg=np.load(wdvars+country+'/eviAvg.npy')
 	ndwiAvg=np.load(wdvars+country+'/ndwiAvg.npy')
-
-	try:
-		ndviAnom2018=np.load(wdvars+country+'/2018/ndviAnom.npy')
-		eviAnom2018=np.load(wdvars+country+'/2018/eviAnom.npy')
-		ndwiAnom2018=np.load(wdvars+country+'/2018/ndwiAnom.npy')
-
-		ndviAvg2018=np.load(wdvars+country+'/2018/ndviAvg.npy')
-		eviAvg2018=np.load(wdvars+country+'/2018/eviAvg.npy')
-		ndwiAvg2018Normal=np.load(wdvars+country+'/2018/ndwiAvg.npy')
-	except:
-		continue
 	######################################
 
 	if nyears==4:
@@ -249,19 +234,22 @@ for icountry in range(47):
 		for m in range(12):
 			xtime[y,m]=(y+2013)+(m+.5)/12
 	
-	Mask=np.zeros(shape=(ndviAvg.shape))
+	MaskAvg=np.zeros(shape=(ndviAvg.shape))
+	MaskAnom=np.zeros(shape=(ndviAnom.shape))
 	for y in range(nyears):
 		for m in range(12):
-			if math.isnan(ndviAvg[y,m])==True or math.isnan(ndviAnom[y,m]):
-				Mask[y,m]=1
+			if math.isnan(ndviAvg[y,m])==True:
+				MaskAvg[y,m]=1
+			if math.isnan(ndviAnom[y,m])==True:
+				MaskAnom[y,m]=1
 	
-	ndviAvg=np.ma.masked_array(ndviAvg,Mask)
-	eviAvg=np.ma.masked_array(eviAvg,Mask)
-	ndwiAvgNormal=np.ma.masked_array(ndwiAvg,Mask)
-	ndviAnom=np.ma.masked_array(ndviAnom,Mask)
-	eviAnom=np.ma.masked_array(eviAnom,Mask)
-	ndwiAnom=np.ma.masked_array(ndwiAnom,Mask)
-	xtime=np.ma.masked_array(xtime,Mask)
+	ndviAvg=np.ma.masked_array(ndviAvg,MaskAvg)
+	eviAvg=np.ma.masked_array(eviAvg,MaskAvg)
+	ndwiAvgNormal=np.ma.masked_array(ndwiAvg,MaskAvg)
+	ndviAnom=np.ma.masked_array(ndviAnom,MaskAnom)
+	eviAnom=np.ma.masked_array(eviAnom,MaskAnom)
+	ndwiAnom=np.ma.masked_array(ndwiAnom,MaskAnom)
+	xtime=np.ma.masked_array(xtime,MaskAvg)
 
 	ndwiAnom=abs(ndwiAnom)
 	ndwiAnom2018=abs(ndwiAnom2018)
@@ -339,7 +327,9 @@ for icountry in range(47):
 			maxtmp=np.amax(ndviAvg[0,:6])
 			maxMonthWYears[0,:]=np.ma.where(ndviAvg[:,:]==maxtmp)[0][0],np.ma.where(ndviAvg[:,:]==maxtmp)[1][0]
 			for y in range(1,nyears):
-				maxtmp=np.amax([ndviAvg[y-1,6:],ndviAvg[y,:6]])
+				maxtmp1=np.ma.amax(ndviAvg[y-1,6:])
+				maxtmp2=np.ma.amax(ndviAvg[y,:6])
+				maxtmp=np.ma.amax([maxtmp1,maxtmp2])
 				maxMonthWYears[y,:]=np.ma.where(ndviAvg[:,:]==maxtmp)[0][0],np.ma.where(ndviAvg[:,:]==maxtmp)[1][0]
 
 		if SeasonOverYear:
@@ -371,48 +361,48 @@ for icountry in range(47):
 			plt.clf()
 			fig, ax2 = plt.subplots()
 			ax1 = ax2.twinx()
-			ax2.grid(True)
+			ax2.grid(true)
 	
-			label=crop[cp]+' Production'
+			label=crop[cp]+' production'
 			ax2.bar(x,ydata,bar_width,color='g',label=label)
 			ax2.legend(loc='upper right')
 			ax2.tick_params(axis='y',colors='g')
-			ax2.set_ylabel(crop[cp]+' Production, Gigatonnes',color='g')
+			ax2.set_ylabel(crop[cp]+' production, gigatonnes',color='g')
 	
-			#if country=='Ethiopia':
+			#if country=='ethiopia':
 			#	ax2.set_ylim([6000,7300])
-			#if country=='Morocco':
+			#if country=='morocco':
 			#	ax2.set_yticks([0,1000,2000,3000,4000,5000,6000,7000,8000])
 			ax2.set_ylim([np.ma.amin(ydata)*.06,np.ma.amax(ydata)*1.15])
-			ax1.set_ylim([np.ma.amin(ndviAvgPlot)*.9,np.ma.amax(ydataNDVI)*1.1])
+			ax1.set_ylim([np.ma.amin(ndviavgplot)*.9,np.ma.amax(ydatandvi)*1.1])
 	
 			#if cp==1:
 			#	ax2.plot(x,ydata,'-^m')
 			#	ax2.tick_params(axis='y',colors='m')
-			#	ax2.set_ylabel(crop[cp]+' Production, Gigatonnes',color='m')
-			#	if country=='Ethiopia':
+			#	ax2.set_ylabel(crop[cp]+' production, gigatonnes',color='m')
+			#	if country=='ethiopia':
 			#		ax2.set_yticks([3100,3300,3500,3700,3900,4100])
-			#	if country=='Morocco':
+			#	if country=='morocco':
 			#		ax2.set_yticks([4000,5000,6000,7000,8000])
 			#if cp==2:
 			#	ax2.plot(x,ydata,'-^y')
 			#	ax2.tick_params(axis='y',colors='y')
-			#	ax2.set_ylabel(crop[cp]+' Production, Gigatonnes',color='y')
-			#	if country=='Ethiopia':
+			#	ax2.set_ylabel(crop[cp]+' production, gigatonnes',color='y')
+			#	if country=='ethiopia':
 			#		ax2.set_yticks([3300,3400,3500,3600,3700,3800,3900,4000,4100,4200,4300])
 			
-			ax1.plot(xtime,ndviAvgPlot,'b*-',label='Monthly NDVI')
+			ax1.plot(xtime,ndviavgplot,'b*-',label='monthly ndvi')
 			ax1.legend(loc='upper left')
-			#if country=='Ethiopia':
+			#if country=='ethiopia':
 			#	ax1.set_yticks([0.0,0.05,0.1,0.15,0.2,0.25,0.3,0.35])
-			#if country=='Morocco':
+			#if country=='morocco':
 			#	ax1.set_yticks([0.25,0.3,0.35,.4,.45,.5,.55,.6,.65])
 			#else:
-			#	ax1.set_ylim([0,np.ma.amax(ndviAvgPlot)*1.2])
-			ax1.set_ylabel('NDVI Monthly Average',color='b')
+			#	ax1.set_ylim([0,np.ma.amax(ndviavgplot)*1.2])
+			ax1.set_ylabel('ndvi monthly average',color='b')
 			ax1.tick_params(axis='y',colors='b')
 	
-			plt.title(country+': NDVI Monthly Average and '+crop[cp]+' Production, Corr='+str(round(Corr[0,cp],2)))
+			plt.title(country+': ndvi monthly average and '+crop[cp]+' production, corr='+str(round(corr[0,cp],2)))
 			plt.savefig(wdfigs+country+'/monthly_ndvi_avg_with_'+crop[cp]+'.jpg',dpi=700)
 
 	
@@ -533,8 +523,17 @@ for icountry in range(47):
 	else:
 		for y in range(nyears):
 			ydataEVI[y]=np.ma.amax(eviAvg[y,:])
-			if SeasonOverYear:
-				ydataEVI[y]=eviAvg[maxMonthWYears[y,0],maxMonthWYears[y,1]]
+			maxMonth[y]=np.ma.where(eviAvg[y,:]==np.ma.amax(eviAvg[y,:]))[0][0]
+		if np.any(maxMonth==10) or np.any(maxMonth==11) or np.any(maxMonth==0) or np.any(maxMonth==1):
+			SeasonOverYear=True
+			maxMonthWYears=np.zeros(shape=(nyears,2),dtype=int)
+			maxtmp=np.amax(eviAvg[0,:6])
+			maxMonthWYears[0,:]=np.ma.where(eviAvg[:,:]==maxtmp)[0][0],np.ma.where(eviAvg[:,:]==maxtmp)[1][0]
+			for y in range(1,nyears):
+				maxtmp1=np.ma.amax(eviAvg[y-1,6:])
+				maxtmp2=np.ma.amax(eviAvg[y,:6])
+				maxtmp=np.ma.amax([maxtmp1,maxtmp2])
+				maxMonthWYears[y,:]=np.ma.where(eviAvg[:,:]==maxtmp)[0][0],np.ma.where(eviAvg[:,:]==maxtmp)[1][0]
 
 	corrMonthName=corrMonth
 	if corrMonth!='Max':
@@ -970,8 +969,7 @@ for icountry in range(47):
 		ydataForPred[4]=np.ma.amax([eviAnom2018])
 		ydataForPred[5]=np.ma.amax([ndwiAnom2018])
 
-	yieldPred=slope[whereMaxCorrX]*ydataForPred[whereMaxCorrX]+bInt[whereMaxCorrX]
-	yieldPred=yieldPred[0]
+	yieldPred=slope[whereMaxCorrX,whereMaxCorrY]*ydataForPred[whereMaxCorrX]+bInt[whereMaxCorrX,whereMaxCorrY]
 	predAnom=yieldPred-meanYield
 
 	stdDevYield=stdDev(cropYield[whereMaxCorrY])
@@ -981,22 +979,70 @@ for icountry in range(47):
 	##########################################################################################
 	# Plot the Prediction
 	##########################################################################################
+	cp=whereMaxCorrY
 	if variables[whereMaxCorrX]=='ndviAvg':
 		xdata=np.ma.compressed(ndviAvg)
+		xdata2018=np.ma.compressed(ndviAvg2018)
 	elif variables[whereMaxCorrX]=='eviAvg':
 		xdata=np.ma.compressed(eviAvg)
+		xdata2018=np.ma.compressed(eviAvg2018)
 	elif variables[whereMaxCorrX]=='ndwiAvg':
 		xdata=np.ma.compressed(ndwiAvg)
+		xdata2018=np.ma.compressed(ndwiAvg2018)
 
 	elif variables[whereMaxCorrX]=='ndviAnom':
 		xdata=np.ma.compressed(ydataNDVIAnom)
+		xdata2018=np.ma.compressed(ndviAnom2018)
 	elif variables[whereMaxCorrX]=='eviAnom':
 		xdata=np.ma.compressed(ydataEVIAnom)
+		xdata2018=np.ma.compressed(eviAnom2018)
 	elif variables[whereMaxCorrX]=='ndwiAnom':
 		xdata=np.ma.compressed(ydataNDWIAnom)
+		xdata2018=np.ma.compressed(ndwiAnom2018)
 
+	ydata=cropYield[cp]
+	satellitePlot=np.zeros(shape=(xdata.shape[0]+ndviAvg2018.shape[0]))
+	satellitePlot[:xdata.shape[0]]=xdata
+	satellitePlot[xdata.shape[0]:]=xdata2018
+	
 	if variables[whereMaxCorrX][-3:]=='Avg':
 
+		x=np.arange(2013.+(harvestMonth/12),2013.+(harvestMonth/12)+nyears)
+
+		xTimeSmall=np.zeros(shape=(ndviAvg2018.shape))
+		for m in range(len(xTimeSmall)):
+			xTimeSmall[m]=2018+(m+.5)/12
+
+		xtimeNew=np.zeros(shape=(xtime.shape[0]+ndviAvg2018.shape[0]))
+		xtimeNew[:xtime.shape[0]]=xtime
+		xtimeNew[xtime.shape[0]:]=xTimeSmall
+
+		plt.clf()
+		fig, ax2 = plt.subplots()
+		ax1 = ax2.twinx()
+		ax2.grid(True)
+	
+		label=crop[cp]+' production'
+		ax2.bar(x,ydata,bar_width,color='g',label=label)
+		label='predicted production'
+		ax2.bar(x[-1]+1,yieldPred,bar_width,color='m',label=label)
+		ax2.legend(loc='upper right')
+		ax2.tick_params(axis='y',colors='g')
+		ax2.set_ylabel(crop[cp]+' production, gigatonnes',color='g')
+	
+		ax2.set_ylim([np.ma.amin(ydata)*.06,np.ma.amax(ydata)*1.1])
+		ax1.set_ylim([np.ma.amin(satellitePlot)*.9,np.ma.amax(satellitePlot)*1.15])
+	
+		ax1.plot(xtimeNew,satellitePlot,'b*-',label='monthly ndvi')
+		ax1.legend(loc='upper left')
+
+		ax1.set_ylabel('NDVI Monthly Average',color='b')
+		ax1.tick_params(axis='y',colors='b')
+	
+		plt.title(country+': NDVI Monthly Average and '+crop[cp]+' Production, Corr='+str(round(Corr[whereMaxCorrX,cp],2)))
+		plt.savefig(wdfigs+country+'/pred_monthly_'+variables[whereMaxCorrX]+'_avg_with_'+crop[cp]+'.jpg',dpi=700)
+		print 'made Plot'
+		exit()
 
 
 fwrite.close()

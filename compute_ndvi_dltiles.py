@@ -215,7 +215,7 @@ countyName=np.load(wdvars+'countyName.npy')
 stateName=np.load(wdvars+'stateName.npy')
 
 #country='Ethiopia'
-countryNum='34'
+countryNum='42'
 
 start='2013-01-01'
 end='2018-01-03'
