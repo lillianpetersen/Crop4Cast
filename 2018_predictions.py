@@ -63,16 +63,20 @@ countylons=np.load(wdvars+'county_lons.npy')
 countyName=np.load(wdvars+'countyName.npy')
 stateName=np.load(wdvars+'stateName.npy')
 
-nmonths=3
+startMonth=1
+endMonth=int(datetime.datetime.now().strftime("%Y-%m-%d").split('-')[1])
+nmonths=endMonth
 makePlots=False
 
 monthName=['January','Febuary','March','April','May','June','July','August','September','October','November','December']
 
 for icountry in range(47):
+	#icountry=26
 	if icountry==0:
 		continue
 
 	Good=False
+	Name=country
 
 	ndviAnom=np.zeros(shape=(nmonths))
 	eviAnom=np.zeros(shape=(nmonths))
@@ -83,7 +87,7 @@ for icountry in range(47):
 	ndwiAvg=np.zeros(shape=(nmonths))
 	
 	########### find countries with the right growing season ###########
-	fseason=open(wddata+'max_ndviMonths.csv')
+	fseason=open(wddata+'max_ndviMonths.csv','r')
 	for line in fseason:
 		tmp=line.split(',')
 		if tmp[0]==str(icountry):
@@ -98,12 +102,12 @@ for icountry in range(47):
 				corrMonth=month1
 			corrMonth=int(corrMonth)
 
-			if int(corrMonth)<=1:
+			if int(corrMonth)==3 or int(corrMonth)==4:
 				print '\nRunning',country
 				Good=True
 				break
 			else:
-				print country, 'has later season'
+				print country, 'has other season'
 				break
 	if Good==False:
 		continue
@@ -149,7 +153,7 @@ for icountry in range(47):
 	ndwiAnomAllPix=np.zeros(shape=(nmonths,vlen,hlen))
 	
 	########### Compute Pixel-wise Averages and Anomalies ###########
-	for m in range(nmonths):
+	for m in range(startMonth,endMonth):
 		for v in range(vlen):
 			for h in range(hlen):
 				ndviMonthAvg[m,v,h]=ndviMonthAvgU[m,v,h]/climoCounterAll[m,v,h]
@@ -163,7 +167,7 @@ for icountry in range(47):
 
 	########### Compute Anomalies and Avgs for the whole tile ###########
 	##### Find Sums #####
-	for m in range(nmonths):
+	for m in range(startMonth,endMonth):
 		for v in range(vlen):
 			for h in range(hlen):
 				if math.isnan(ndviAnomAllPix[m,v,h])==False and ndviAnomAllPix[m,v,h]!=0.:
@@ -179,7 +183,7 @@ for icountry in range(47):
 					ndwiAvgSum[m]+=ndwiMonthAvg[m,v,h]
 
 	##### Divide Sums #####
-	for m in range(nmonths):
+	for m in range(startMonth,endMonth):
 		ndviAnom[m]=ndviAnomSum[m]/counterSum[m]
 		eviAnom[m]=eviAnomSum[m]/counterSum[m]
 		ndwiAnom[m]=ndwiAnomSum[m]/counterSum[m]

@@ -74,7 +74,7 @@ makePlots=False
 
 for icounty in range(1):
 
-	icounty=34
+	icounty=26
 	ndviAnom=np.zeros(shape=(nyears,12))
 	eviAnom=np.zeros(shape=(nyears,12))
 	ndwiAnom=np.zeros(shape=(nyears,12))
