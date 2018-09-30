@@ -10,7 +10,7 @@ from sklearn import svm
 import time
 from sklearn.preprocessing import StandardScaler
 import datetime
-from celery import Celery
+#from celery import Celery
 from scipy import ndimage
 
 ####################
@@ -229,13 +229,13 @@ res=120
 badarrays=0
 
 now = datetime.datetime.now()
-start='2018-02-01'
+start='2018-01-01'
 end=now.strftime("%Y-%m-%d")
 nyears=1
-nmonths=6
+nmonths=9
 
-fmonths=open(wddata+'max_ndviMonths.csv')
-corrMonthArray=np.zeros(shape=(48))
+fmonths=open(wddata+'max_ndviMonths_final.csv')
+corrMonthArray=99*np.ones(shape=(48))
 countryList=[]
 for line in fmonths:
 	tmp1=line.split(',')
@@ -266,16 +266,22 @@ for line in fmonths:
 countriesWithCurrentSeason=[]
 for icountry in range(47):
 	corrMonth=corrMonthArray[icountry]
-	if corrMonth==3 or corrMonth==4:
-		print icountry, corrMonth
+	if corrMonth<0:
+		#print icountry, corrMonth
 		countriesWithCurrentSeason.append(icountry)
-	else:
-		continue
 
 for countryNum in countriesWithCurrentSeason:
-	if countryNum<31:
+	#if countryNum<=23:
+	if countryNum>23:
 		continue
 	
+	start='2018-0'+str(int(corrMonth-2))+'-01'
+	if corrMonth+2>9: # over current month
+		end=end
+	else:
+		end='2018-0'+str(int(corrMonth+2))+'-31'
+	print start,end
+
 	f=open(wddata+'africa_latlons.csv')
 	for line in f:
 		tmp=line.split(',')
@@ -498,11 +504,8 @@ for countryNum in countriesWithCurrentSeason:
 	
 		time1=time.time()
 	
-		for v in range(pixels):
-			for h in range(pixels):
-				if cloudMask[v,h]==0 and maskforAlpha[v,h]==0: # and oceanMask[v,h]==0:
-					Mask[d,v,h]=0
-		
+		Mask[d,:,:]=cloudMask+maskforAlpha
+		Mask[Mask>1]=1
 	
 		if np.amin(Mask[d])==1:
 			print 'bad: continued'
@@ -632,11 +635,7 @@ for countryNum in countriesWithCurrentSeason:
 		  
 		greenM=np.ma.masked_array(green[:,:,0],Mask[d,:,:])
 	
-		for v in range(pixels):
-			for h in range(pixels):
-				ndwiAll[d,v,h] = (green[v,h,0]-nir[v,h,0])/(nir[v,h,0]+green[v,h,0]+1e-9)
-			#ndwiAll[v,h,k] = (greenM[v,h]-nirM[v,h])/(nirM[v,h]+greenM[v,h]+1e-9)
-		#masked_ndwi = np.ma.masked_array(ndwiAll[:,:,k], Mask[:,:,k])
+		ndwiAll[d,:,:] = (green[:,:,0]-nir[:,:,0])/(nir[:,:,0]+green[:,:,0]+1e-9)
 	
 		if makePlots:
 			masked_ndwi = np.ma.masked_array(ndwiAll[d,:,:], Mask[d,:,:])
