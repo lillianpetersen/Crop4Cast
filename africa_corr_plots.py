@@ -145,12 +145,13 @@ maxMonthAll=np.zeros(shape=(48))
 badCorrCountries=[]
 
 countryList=[]
-cropAll=[]
 indexAll=[]
+cropAll=[]
 CorrsAll=np.zeros(shape=(48,6,6))
 predictionsAll=np.zeros(shape=(48,6,6))
 errorAll=np.zeros(shape=(48,6,6))
 CorrAll=np.zeros(shape=(48,6,6))
+prodFromStdDevAll=np.zeros(shape=(48,6,6))
 #xMulti=np.zeros(shape=(620,6))
 #ydataMulti=np.zeros(shape=(620))
 xMulti=np.zeros(shape=(155,6))
@@ -1141,8 +1142,15 @@ for icountry in range(47):
 	print crop[whereMaxCorrY], variables[whereMaxCorrX]
 	print round(maxMonthAll[countryNum],0)
 
+	cropA=[]
+	for i in range(len(crop)):
+		cropA.append(np.array(crop)[i])
+	for j in range(i+1,6):
+		cropA.append('')
+	cropA=np.array(cropA)
+	cropAll.append(cropA)
+
 	CorrsAll[countryCounter]=Corr
-	cropAll.append(crop)
 	indexAll.append(variables[whereMaxCorrX])
 	
 	if maxCorr<.75:
@@ -1324,16 +1332,20 @@ for icountry in range(47):
 		#	print variables[whereMaxCorrX]
 
 		predFromStdDev=np.zeros(shape=(len(crop),6))
+		prodFromStdDev=np.zeros(shape=(6,len(crop)))
 		bar_width=0.2
 		for cp in range(len(crop)):
 			for index in range(6):
 
 				#### Predict 2018 yield ###
 				yieldPred=slope[index,cp]*ydataForPred[index]+bInt[index,cp]
+				prod=cropCurrent[cp]
 				predAnom=yieldPred-meanYield[cp]
+				prodAnom=prod-meanYield[cp]
 		
 				stdDevYield=stdDev(cropYield[cp])
 				predFromStdDev[cp,index]=predAnom/stdDevYield
+				prodFromStdDev[index,cp]=prodAnom/stdDevYield
 				###########################
 
 				if variables[index]=='ndviAvg':
@@ -1403,6 +1415,8 @@ for icountry in range(47):
 							xtimeNew[xtime.shape[0]:]=xTimeSmall
 						else:
 							xtimeNew=xtime
+
+						error=abs(cropCurrent[cp]-yieldPred)/cropCurrent[cp]*100
 				
 						plt.clf()
 						fig, ax2 = plt.subplots()
@@ -1413,6 +1427,7 @@ for icountry in range(47):
 						ax2.bar(x,ydata,bar_width,color='g',label=label)
 						label='Predicted Production'
 						ax2.bar(x[-1]+1,yieldPred,bar_width,color='m',label=label)
+						ax2.bar(x[-1]+1.21,cropCurrent[cp],bar_width,color='mediumspringgreen',label='Actual production')
 						ax2.legend(loc='upper right')
 						ax2.tick_params(axis='y',colors='g')
 						ax2.set_ylabel(crop[cp]+' Production, Gigatonnes',color='g')
@@ -1426,7 +1441,7 @@ for icountry in range(47):
 						ax1.set_ylabel(variablesTitle[index]+' Monthly Average *100',color='b')
 						ax1.tick_params(axis='y',colors='b')
 					
-						plt.title(country+': '+variablesTitle[index][:4]+' and '+crop[cp]+' Prod')
+						plt.title(country+': '+variablesTitle[index][:4]+' and '+crop[cp]+' Prod, Corr = '+str(round(Corr[index,cp],2))+', Pred Error = '+str(round(error,2))+'%')
 						plt.savefig(wdfigs+country+'/pred_monthly_'+variables[index]+'_avg_with_'+crop[cp]+'.pdf',dpi=700)
 					
 				###########################################################
@@ -1629,7 +1644,7 @@ for icountry in range(47):
 					print str(np.round(error,2))+'%',variables[index],crop[cp]
 					predictionsAll[countryCounter,index,cp]=yieldPred
 					errorAll[countryCounter,index,cp]=error
-
+					prodFromStdDevAll[countryCounter,index,cp]=prodFromStdDev[index,cp]
 				
 					#if Corr[index,cp]>.75:
 					#	print 'good corr'
@@ -1659,6 +1674,308 @@ for icountry in range(47):
 					str(round(predFromStdDev[whereMaxCorrY,whereMaxCorrX],2))+','+str(round(errorAll[countryCounter,whereMaxCorrX,whereMaxCorrY],2))+' \n')
 
 				#print(country+' & '+crop[cp]+' & '+variables[index]+' & '+str(round(Corr[index,cp],3))+' & '+str(int(predictionsAll[countryCounter,index,cp]))+' & '+str(int(cropCurrent[cp]))+' & '+str(round(errorAll[countryCounter,index,cp],2))+' & '+' \\\\')
+
+#########################################################
+# Box and Whisker Plots
+#########################################################
+mask=np.zeros(shape=(predictionsAll.shape))
+mask[errorAll==0]=1
+predictionsAllM=np.ma.masked_array(predictionsAll,mask)
+errorAllM=np.ma.masked_array(errorAll,mask)
+errorAllM[35,:,:][errorAllM[35,:,:]>100]=100
+
+########## Index ##########
+boxIndices=np.zeros(shape=(54,6))
+for i in range(6):
+	boxIndices[:,i]=np.ma.compressed(errorAllM[:,i,:])
+
+medians=np.median(boxIndices,axis=0)
+sort=np.argsort(medians)[::-1]
+sort1=sort+1
+
+indicesSorted=np.array(variablesTitle)[sort]
+boxIndicesSorted=boxIndices[:,sort]
+
+labels=list(indicesSorted)
+for i in range(len(labels)):
+	labels[i]=indicesSorted[i]+' ('+str(len(boxIndicesSorted[:,i]))+')'
+
+widths=[]
+for i in range(len(labels)):
+	widths.append(0.5)
+fig.clear()
+plt.cla()
+plt.close()
+plt.clf()
+plt.figure(25,figsize=(7,3))
+ax = plt.subplot(1,1,1)
+ax.set_position([.22,.15,.70,.75])
+ax.set_aspect(8)
+ax.set_xlim([-3,103])
+ax.boxplot(boxIndices[:,sort], 0, '', vert=0, widths=widths, whis=[12.5,87.5])
+plt.title('Prediction Errors by Index')
+plt.yticks([1,2,3,4,5,6], labels)
+plt.xlabel('Percent Error from Predicted to Actual Production')
+plt.grid(axis='x')
+plt.savefig(wdfigs+'box_wisker_indices.pdf')
+###########################
+
+########### Crop ###########
+cropAll1=list(cropAll)
+for i in range(4):
+	cropAll1.append(['','','','','',''])
+cropAll1=np.array(cropAll1)
+uniqueCrops=np.unique(cropAll1)
+crops=[]
+lenwhere=np.zeros(shape=8,dtype=int)
+j=-1
+for i in range(len(uniqueCrops)):
+	if len(np.where(cropAll1==uniqueCrops[i])[0])>=8 and uniqueCrops[i]!='':
+		j+=1
+		lenwhere[j]=len(np.where(cropAll1==uniqueCrops[i])[0])
+		crops.append(uniqueCrops[i])
+
+boxCrops=np.zeros(shape=(150,len(crops)))
+#boxCrops=np.empty(len(crops), dtype=object)
+for i in range(len(crops)):
+	tmp=np.zeros(shape=150)
+	for j in range(6):
+		tmp[j*20:j*20+lenwhere[i]]=errorAllM[:,j,:][cropAll1==crops[i]]
+	boxCrops[:,i]=tmp
+boxCrops=np.ma.masked_array(boxCrops,np.round(boxCrops,5)==0)
+boxCropsGood = [[y for y in row if y] for row in boxCrops.T]
+boxCropsGood=np.array(boxCropsGood)
+
+medians=np.zeros(shape=8)
+for i in range(8):
+	medians[i]=np.median(boxCropsGood[i])
+sort=np.argsort(medians)[::-1]
+sort1=sort+1
+
+boxCropsSorted=[]
+for i in range(8):
+	boxCropsSorted.append(boxCropsGood[sort[i]])
+cropsSorted=np.array(crops)[sort]
+
+labels=list(cropsSorted)
+for i in range(len(labels)):
+	labels[i]=cropsSorted[i]+' ('+str(len(boxCropsSorted[i]))+')'
+
+widths=[]
+for i in range(len(labels)):
+	widths.append(0.5)
+plt.cla()
+plt.close()
+plt.clf()
+plt.figure(25,figsize=(7,3.9))
+ax = plt.subplot(1,1,1)
+ax.set_position([.22,.15,.70,.75])
+ax.set_aspect(8)
+ax.set_xlim([-3,103])
+ax.boxplot(boxCropsSorted, 0, '', vert=0, widths=widths, whis=[12.5,87.5])
+plt.title('Accuracies of Predictions by Crop')
+plt.yticks([1,2,3,4,5,6,7,8], labels)
+plt.xlabel('Percent Error from Predicted to Actual Production')
+plt.grid(axis='x')
+plt.savefig(wdfigs+'box_wisker_crop.pdf')
+###########################
+
+######### Country #########
+errorAllr=np.zeros(shape=(21,6,6))
+countriesM=[]
+j=-1
+for i in range(44):
+	if np.ma.is_masked(np.amax(errorAllM[i,:,:])):
+		continue
+	j+=1
+	errorAllC[j]=np.ma.array(errorAllM[i])
+	countriesM.append(countryList[i])
+errorAllC=np.ma.masked_array(errorAllC,errorAllC==0)	
+errorAllC=np.reshape(errorAllC,[21,36])
+boxCountry = [[y for y in row if y] for row in errorAllC]
+
+medians=np.zeros(shape=21)
+for i in range(21):
+	medians[i]=np.median(boxCountry[i])
+sort=np.argsort(medians)[::-1]
+
+boxCountrySorted=[]
+for i in range(21):
+	boxCountrySorted.append(boxCountry[sort[i]])
+countriesSorted=np.array(countriesM)[sort]
+
+labels=list(countriesSorted)
+for i in range(len(labels)):
+	labels[i]=countriesSorted[i]+' ('+str(len(boxCountrySorted[i]))+')'
+
+widths=[]
+for i in range(len(labels)):
+	widths.append(0.5)
+plt.cla()
+plt.close()
+plt.clf()
+plt.figure(25,figsize=(7,10))
+ax = plt.subplot(1,1,1)
+ax.set_position([.22,.15,.70,.75])
+ax.set_aspect(8)
+ax.set_xlim([-3,103])
+ax.boxplot(boxCountrySorted, 0, '', vert=0, widths=widths, whis=[12.5,87.5])
+plt.title('Prediction Errors by Country')
+plt.yticks(range(1,22), labels)
+plt.xlabel('Percent Error from Predicted to Actual Production')
+plt.grid(axis='x')
+plt.savefig(wdfigs+'box_wisker_countries.pdf')
+###########################
+
+######## latitudes ########
+
+countryLats=np.zeros(shape=(len(countriesM)))
+latGroups=np.zeros(shape=(len(countriesM)))
+for i in range(len(countriesM)):
+	f=open(wddata+'countries_by_latitude.csv','r')
+	country=countriesM[i]
+	for line in f:
+		tmp=line.split(',')
+		if tmp[3][:-1]==country:
+			countryLats[i]=float(tmp[1])
+			countryLat=float(tmp[1])
+			continue
+	
+	if countryLat<-20:
+		latGroups[i]=0
+	elif countryLat<-10:
+		latGroups[i]=1
+	elif countryLat<0:
+		latGroups[i]=2
+	elif countryLat<10:
+		latGroups[i]=3
+	elif countryLat<20:
+		latGroups[i]=4
+	else:
+		latGroups[i]=5
+
+boxLatsA=np.zeros(shape=(100,6))
+for i in range(21):
+	for j in range(6):
+		boxLatsA[:len(np.ma.compressed(errorAllC[latGroups==j])),j]=np.ma.compressed(errorAllC[latGroups==j])
+boxLatsA=np.ma.masked_array(boxLatsA,np.round(boxLatsA,5)==0)
+boxLats= [[y for y in row if y] for row in boxLatsA.T]
+
+medians=np.zeros(shape=6)
+for i in range(6):
+	medians[i]=np.median(boxLats[i])
+sort=np.argsort(medians)[::-1]
+
+boxLatsSorted=[]
+for i in range(6):
+	boxLatsSorted.append(boxLats[sort[i]])
+latsSorted=np.array(countryLats)[sort]
+
+lats=['35S-20S','20S-10S','10S-0N','0N-10N','10N-20N','20-38N']
+latsSorted=list(np.array(lats)[sort])
+labels=list(lats)
+labelsUnsorted=list(lats)
+for i in range(len(labels)):
+	labels[i]=latsSorted[i]+' ('+str(len(boxLatsSorted[i]))+')'
+	labelsUnsorted[i]=lats[i]+' ('+str(len(boxLats[i]))+')'
+
+widths=[]
+for i in range(len(labels)):
+	widths.append(0.5)
+plt.cla()
+plt.close()
+plt.clf()
+plt.figure(25,figsize=(7,3))
+ax = plt.subplot(1,1,1)
+ax.set_position([.22,.15,.70,.75])
+ax.set_aspect(8)
+ax.set_xlim([-3,103])
+ax.boxplot(boxLats, 0, '', vert=0, widths=widths, whis=[12.5,87.5])
+plt.title('Prediction Errors by Latitude')
+plt.yticks(range(1,7), labelsUnsorted)
+plt.xlabel('Percent Error from Predicted to Actual Production')
+plt.grid(axis='x')
+plt.savefig(wdfigs+'box_wisker_lats.pdf')
+###########################
+
+######## Relative High-low ########
+prodFromStdDevAll=np.ma.masked_array(prodFromStdDevAll,prodFromStdDevAll==0)
+
+countryStd=np.zeros(shape=(21,6,6))
+errorAll1=np.zeros(shape=(21,6,6))
+stdGroups=-9999*np.ones(shape=(21,6,6))
+icountry=-1
+for c in range(48):
+	if np.ma.is_masked(np.amax(errorAllM[c])):
+		continue
+	icountry+=1
+	countryStd[icountry,:,:]=prodFromStdDevAll[c,:,:]
+	errorAll1[icountry]=errorAllM[c,:,:]
+	for cp in range(6):
+		for i in range(6):
+			if np.ma.is_masked(errorAllM[c,i,cp]):
+				continue
+			std=countryStd[icountry,i,cp]
+			
+			if std<-1:
+				stdGroups[icountry,i,cp]=0
+			elif std<-0.5:
+				stdGroups[icountry,i,cp]=1
+			elif std<0:
+				stdGroups[icountry,i,cp]=2
+			elif std<0.5:
+				stdGroups[icountry,i,cp]=3
+			elif std<1:
+				stdGroups[icountry,i,cp]=4
+			else:
+				stdGroups[icountry,i,cp]=5
+errorAll1=np.ma.masked_array(errorAll1,errorAll1==0)
+countryStd=np.ma.masked_array(countryStd,countryStd==0)
+stdGroups=np.ma.masked_array(stdGroups,stdGroups==-9999)
+
+boxStdA=np.zeros(shape=(150,6))
+for i in range(21):
+	for j in range(6):
+		boxStdA[:len(np.ma.compressed(errorAll1[stdGroups==j])),j]=np.ma.compressed(errorAll1[stdGroups==j])
+boxStdA=np.ma.masked_array(boxStdA,np.round(boxStdA,5)==0)
+boxStd= [[y for y in row if y] for row in boxStdA.T]
+
+medians=np.zeros(shape=6)
+for i in range(6):
+	medians[i]=np.median(boxStd[i])
+sort=np.argsort(medians)[::-1]
+
+boxStdSorted=[]
+for i in range(6):
+	boxStdSorted.append(boxStd[sort[i]])
+
+labels1=['<-1','-1-(-0.5)','-0.5-0','0-.5','0.5-1','>1']
+stdSorted=list(np.array(labels1)[sort])
+labels=list(labels1)
+labelsUnsorted=list(labels1)
+for i in range(len(labels)):
+	labels[i]=stdSorted[i]+' ('+str(len(boxStdSorted[i]))+')'
+	labelsUnsorted[i]=labels1[i]+' ('+str(len(boxStd[i]))+')'
+
+widths=[]
+for i in range(len(labels)):
+	widths.append(0.5)
+plt.cla()
+plt.close()
+plt.clf()
+plt.figure(25,figsize=(7,3))
+ax = plt.subplot(1,1,1)
+ax.set_position([.22,.15,.70,.75])
+ax.set_xlim([-3,103])
+ax.boxplot(boxStd, 0, '', vert=0, widths=widths, whis=[12.5,87.5])
+ax.set_xlim([-3,103])
+ax.set_aspect(8)
+plt.title('Prediction Errors by the Anomaly of the Harvest')
+plt.yticks(range(1,7), labelsUnsorted)
+plt.xlabel('Percent Error from Predicted to Actual Production')
+plt.grid(axis='x')
+plt.savefig(wdfigs+'box_wisker_anomaly.pdf')
+###########################
 
 ####### Multivariate #######
 exit()

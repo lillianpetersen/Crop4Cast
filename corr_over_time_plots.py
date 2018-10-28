@@ -1,6 +1,6 @@
 import os
 import matplotlib.pyplot as plt
-import descarteslabs as dl
+#import descarteslabs as dl
 import numpy as np
 import math
 import sys
@@ -11,6 +11,12 @@ from sklearn.preprocessing import StandardScaler
 from operator import and_
 from mpl_toolkits.basemap import Basemap
 from matplotlib.patches import Polygon
+
+
+wd='/Users/lilllianpetersen/Google Drive/science_fair/'
+wddata='/Users/lilllianpetersen/data/'
+wdvars='/Users/lilllianpetersen/saved_vars/'
+wdfigs='/Users/lilllianpetersen/figures/'
 
 #corrs=np.array([[-0.06,0.12,0.58,0.67,.24], #NDVI
 #	[-0.09,0.13,0.55,0.67,.26], #EVI
@@ -31,7 +37,10 @@ for cp in range(3):
 	slopes[cp,:,:]=slopes[cp,:,:]/stdDev[cp]
 slopes=slopes*np.mean(stdDev)
 
+plt.cla()
+plt.close()
 plt.clf()
+plt.figure(25,figsize=(9,7))
 xint=[5,6,7,8,9]
 x=['May','June','July','August','September']
 ax=plt.gca()
@@ -43,13 +52,14 @@ ax=plt.gca()
 #subPlot1 = plt.axes([.1,.1,.8,.75])
 
 colors=['g','y','b']
+datapoints=['1559','1567','188']
 crops=['Corn','Soy','Sorghum']
 plt.plot([5,9],[multiCorr[0],multiCorr[0]],'-k',linewidth=3,label='Multivariate Regression')
 plt.plot(xint,corrs[0,:,0],'^--k',label='NDVI')
 plt.plot(xint,corrs[0,:,1],'s-.k',label='EVI')
 plt.plot(xint,-1*corrs[0,:,2],'+:k',label='NDWI*(-1)')
 for cp in range(3):
-	plt.plot([5,9],[multiCorr[cp],multiCorr[cp]],'-'+colors[cp],linewidth=3,label=crops[cp])
+	plt.plot([5,9],[multiCorr[cp],multiCorr[cp]],'-'+colors[cp],linewidth=3,label=crops[cp]+', '+datapoints[cp]+' data points')
 for cp in range(3):
 	plt.plot(xint,corrs[cp,:,0],'^--'+colors[cp])
 	plt.plot(xint,corrs[cp,:,1],'s-.'+colors[cp])
@@ -59,7 +69,7 @@ plt.ylim(-.20,1.0001)
 ax.set_xticks([5,6,7,8,9])
 ax.set_xticklabels(['May','June','July','August','September'])
 plt.title('Correlations Over Time')
-plt.ylabel('Correlations to Corn Yield')
+plt.ylabel('Correlations to Crop Yields')
 plt.grid(True)
 plt.savefig(wdfigs+'Illinois/Illinois_corrs_over_time.pdf',dpi=700)
 exit()

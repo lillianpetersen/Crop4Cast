@@ -1,6 +1,6 @@
 import os
 import matplotlib.pyplot as plt
-import descarteslabs as dl
+#import descarteslabs as dl
 import numpy as np
 import math
 import sys
@@ -236,6 +236,17 @@ for cp in range(ncrops):
 		plt.grid(True)
 		plt.savefig(wdfigs+'Illinois/'+crops[cp]+'_yield_over_time.pdf',dpi=700)
 		plt.clf()
+
+cropYieldAll=np.ma.masked_array(cropYieldAll,cropYieldAll==-9999)
+buTons=[39.368, 36.744, 39.368]	#bu/tonne, divide by this
+acreHec=[2.471]	# multiply by this, acre/hectare
+for cp in range(3):
+	cropYieldIll[:,cp]=cropYieldIll[:,cp] * (1/buTons[cp]) * (2.471)
+	for icounty in range(3143):
+		cropYieldAll[icounty,:,cp]=cropYieldAll[icounty,:,cp] * (1/buTons[cp]) * (2.471)
+	for icounty in range(102):
+		cropYield[icounty,:,cp]=cropYield[icounty,:,cp] * (1/buTons[cp]) * (2.471)
+
 ########################
 
 ndviAnomOnly=np.ma.masked_array(ndviAnom,anomMaskOnly)
@@ -366,7 +377,7 @@ for cp in range(ncrops):
 		plt.clf()
 		fig, ax2 = plt.subplots()
 		ax1 = ax2.twinx()
-	
+		
 		ax1.plot(x,ydata1,'-*g')
 		ax2.plot(x,ydata2,'-^b')
 		#ax1.set_yticks([60,80,100,120,140,160,180,200])
@@ -374,7 +385,7 @@ for cp in range(ncrops):
 		ax2.set_ylim([-8,7])
 		ax2.tick_params(axis='y',colors='b')
 		ax1.tick_params(axis='y',colors='g')
-		ax1.set_ylabel(cropsT[cp]+' Yield',color='g')
+		ax1.set_ylabel(cropsT[cp]+' Yield, t/ha',color='g')
 		ax2.set_ylabel('NDVI Anomaly *100 (avg over state and July and August)',color='b')
 		ax1.set_xlabel('year')
 		ax2.grid(True)
@@ -383,10 +394,9 @@ for cp in range(ncrops):
 		plt.clf()	
 ########################
 
-'''
 ### Plot EVI Anomaly ###
 x=np.arange(2000,2017)
-ydata1=cropYieldIll
+ydata1=cropYieldIll[:,0]
 ydata2=eviAnomIll*100
 
 Corr=corr(ydata1,ydata2)
@@ -403,10 +413,12 @@ if makePlots:
 	ax2.plot(x,ydata2,'-*b')
 	ax2.tick_params(axis='y',colors='b')
 	ax1.tick_params(axis='y',colors='g')
-	ax1.set_ylim([40,200])
 	ax2.set_ylim([-11,9])
+	ax1.set_ylim([np.amin(ydata1)*.60,1.03*np.amax(ydata1)])
+	ax2.set_ylim([-10.5,9.5])
 	ax2.set_yticks([-10,-8,-6,-4,-2,0,2,4,6,8])
-	ax1.set_ylabel('Corn Yield',color='g')
+	ax1.set_yticks([4,5,6,7,8,9,10,11,12])
+	ax1.set_ylabel('Corn Yield, t/ha',color='g')
 	ax2.set_ylabel('EVI Anomaly *100 (avg over state and July and August)',color='b')
 	ax1.set_xlabel('year')
 	ax2.grid(True)
@@ -417,7 +429,7 @@ if makePlots:
 
 ### Plot NDWI Anomaly ###
 x=np.arange(2000,2017)
-ydata1=cropYieldIll
+ydata1=cropYieldIll[:,0]
 ydata2=ndwiAnomIll*100
 
 Corr=corr(ydata1,ydata2)
@@ -432,18 +444,17 @@ if makePlots:
 	
 	ax1.plot(x,ydata1,'-*g')
 	ax2.plot(x,ydata2,'-^b')
-	ax1.set_yticks([60,80,100,120,140,160,180,200])
+	ax1.set_ylim([np.amin(ydata1)*.65,1.03*np.amax(ydata1)])
 	#ax2.set_yticks([-3,-2,-1,0,1,2,3,4,5,6,7,8])
 	ax2.tick_params(axis='y',colors='b')
 	ax1.tick_params(axis='y',colors='g')
-	ax1.set_ylabel('Corn Yield',color='g')
+	ax1.set_ylabel('Corn Yield, t/ha',color='g')
 	ax2.set_ylabel('NDWI Anomaly *100 (avg over state and July and August)',color='b')
 	ax1.set_xlabel('year')
 	ax2.grid(True)
 	plt.title('Illinois Corn Yield and NDWI Anomaly, Corr= '+str(round(Corr,2)))
 	plt.savefig(wdfigs+'Illinois/corn_yield_and_ndwi_anom.pdf',dpi=700)
 	plt.clf()	
-'''
 ########################
 
 ### Detrend the yield data ###
@@ -520,8 +531,7 @@ for m in range(5):
 		ydata=np.ma.compressed(cropYield1)
 		x=np.ma.masked_array(ndviAnom[:,:,m],anomYieldMask[:,:,m,cp])
 		x=np.ma.compressed(x*100)
-		if not makePlots:
-			continue
+
 		Corr[cp,m,index]=corr(x,ydata)
 		
 		if makePlots:
@@ -536,7 +546,7 @@ for m in range(5):
 			plt.plot([0,0],[-1000,1000],'-k',linewidth=2.)
 			plt.plot(x,ydata,'.b',x,yfit,'g-')
 			plt.title(monthName[m]+' NDVI and '+cropsT[cp]+' Yield, Corr='+str(round(Corr[cp,m,index],2))+', '+str(int(np.sum(1-anomYieldMask[:,:,m,cp])))+' points')
-			plt.ylabel(crops[cp]+' yield anomaly (bu/acre)')
+			plt.ylabel(crops[cp]+' yield anomaly (t/ha)')
 			plt.xlabel('NDVI anomaly *100')
 			plt.xlim([-17,17])
 			plt.ylim([np.amin(ydata)*.9,np.amax(ydata)*1.1])
@@ -579,14 +589,13 @@ index+=1
 #exit()
 
 ### Plot Yield and EVI Corr ###
-for m in range(5):
+for m in range(3,4):
 	for cp in range(3):
 		cropYield1=np.ma.masked_array(cropYield[cp],anomYieldMask[:,:,m,cp])
 		ydata=np.ma.compressed(cropYield1)
 		x=np.ma.masked_array(eviAnom[:,:,m],anomYieldMask[:,:,m,cp])
 		x=np.ma.compressed(x*100)
-		if not makePlots:
-			continue
+
 		Corr[cp,m,index]=corr(x,ydata)
 		
 		if makePlots:
@@ -601,7 +610,7 @@ for m in range(5):
 			plt.plot([0,0],[-1000,1000],'-k',linewidth=2.)
 			plt.plot(x,ydata,'.b',x,yfit,'g-')
 			plt.title(monthName[m]+' EVI and '+cropsT[cp]+' Yield, Corr='+str(round(Corr[cp,m,index],2))+', '+str(int(np.sum(1-anomYieldMask[:,:,m,cp])))+' points')
-			plt.ylabel(crops[cp]+' yield anomaly (bu/acre)')
+			plt.ylabel(crops[cp]+' yield anomaly (t/ha)')
 			plt.xlabel('EVI anomaly *100')
 			plt.xlim([-17,17])
 			plt.ylim([np.amin(ydata)*.9,np.amax(ydata)*1.1])
@@ -611,14 +620,13 @@ index+=1
 
 
 ### Plot Yield and NDWI Corr ###
-for m in range(5):
+for m in range(3,4):
 	for cp in range(3):
 		cropYield1=np.ma.masked_array(cropYield[cp],anomYieldMask[:,:,m,cp])
 		ydata=np.ma.compressed(cropYield1)
 		x=np.ma.masked_array(ndwiAnom[:,:,m],anomYieldMask[:,:,m,cp])
 		x=np.ma.compressed(x*100)
-		if not makePlots:
-			continue
+
 		Corr[cp,m,index]=corr(x,ydata)
 		
 		if makePlots:
@@ -643,7 +651,11 @@ for m in range(5):
 ##############################
 # Multivariate
 ##############################
+
 def plot_figs(elev, azim, X_train, clf, Corrtmp):
+	plt.cla()
+	plt.close()
+	plt.clf()
 	plt.clf()
 	fig = plt.figure(27, figsize=(7,6))
 	ax = Axes3D(fig, elev=elev, azim=azim)
@@ -660,11 +672,11 @@ def plot_figs(elev, azim, X_train, clf, Corrtmp):
 	ax.set_xlim([-15,15])
 	ax.set_ylabel('August EVI')
 	ax.set_ylim([-15,15])
-	ax.set_zlabel('Corn Yield by County')
+	ax.set_zlabel('Corn Yield Anom by County (t/ha)')
 	#ax.w_xaxis.set_ticklabels([])
 	#ax.w_yaxis.set_ticklabels([])
 	#ax.w_zaxis.set_ticklabels([])
-	plt.title('Multivariate Regression Example '+cropsT[cp]+', Corr = '+str(np.round(Corrtmp,2)),fontsize=13)
+	plt.title('Multivariate Regression Example, Corr = '+str(np.round(Corrtmp,2)),fontsize=13)
 	plt.savefig(wdfigs+'Illinois/multivarite_regression_'+crops[cp]+'.pdf',dpi=700)
 	
 	
@@ -714,8 +726,8 @@ for cp in range(3):
 		x=np.ma.compressed(ndwiAnom[:,:,m])
 		xMulti[:,iMulti]=x
 
-	np.save(wdvars+'Illinois/xMulti_'+crops[cp],xMulti)
-	np.save(wdvars+'Illinois/ydataMulti_'+crops[cp],ydata)
+	#np.save(wdvars+'Illinois/xMulti_'+crops[cp],xMulti)
+	#np.save(wdvars+'Illinois/ydataMulti_'+crops[cp],ydata)
 
 	xMultiTrain, xMultiTest, ydataTrain, ydataTest = sklearn.model_selection.train_test_split(xMulti,ydata,test_size=.1,train_size=.9)
 	predict=np.zeros(shape=(10,len(ydataTest)))
@@ -747,7 +759,7 @@ for cp in range(3):
 
 		#elev = 20
 		#azim = -60
-		#plot_figs(elev, azim, Xplot, ols, CorrMulti[cp])
+		#plot_figs(elev, azim, Xplot, ols, 0.86)
 		print '\n',crops[cp],CorrMulti[cp,i]
 
 	#error=((abs(actual-predict))/(abs(actual)+1e-9))*100
@@ -792,22 +804,24 @@ for cp in range(3):
 	if cp==0:
 		predictCorn=predict
 		actualCorn=actual
-		errorCorn=errorP
+		errorCornP=errorP
+		errorCorn=error
 	if cp==1:
 		predictSoy=predict
 		actualSoy=actual
-		errorSoy=errorP
+		errorSoyP=errorP
+		errorSoy=error
 	if cp==2:
 		predictSorghum=predict
 		actualSorghum=actual
-		errorSorghum=errorP
-exit()
+		errorSorghumP=errorP
+		errorSorghum=error
 
 print np.mean(CorrMulti,axis=1)
 exit()
-np.save(wdvars+'Illinois/corr_corn_soy_sorghum',Corr)
-np.save(wdvars+'Illinois/slope_corn_soy_sorghum',slope)
-np.save(wdvars+'Illinois/corr_multivariate',CorrMulti)
+#np.save(wdvars+'Illinois/corr_corn_soy_sorghum',Corr)
+#np.save(wdvars+'Illinois/slope_corn_soy_sorghum',slope)
+#np.save(wdvars+'Illinois/corr_multivariate',CorrMulti)
 
 
 #for icounty in range(ncounties):
@@ -832,22 +846,26 @@ np.save(wdvars+'Illinois/corr_multivariate',CorrMulti)
 #		plt.grid(True)
 #		plt.savefig(wdfigs+'Illinois/'+cName+'_yield_over_time',dpi=700)
 #		plt.clf()
-
+'''
 ##################################################################
 # Crop Yield
 ##################################################################
 cmapArray=plt.cm.jet(np.arange(256))
 #cmin=np.amin(cropYieldOnly[:,12])
-cmin=np.amin(cropYieldOnly[:,12])-20
-#cmax=np.amax(cropYieldOnly[:,14])
-cmax=250.
+#cmin=np.amin(cropYieldOnly[:,12])-20
+cmin=np.amin(cropYieldAll[:,12,0])
+#cmax=np.amax(cropYieldOnly[:,14])/2
+cmax=15.5
 y1=0
 y2=255
 
 j=-1
 
+plt.cla()
+plt.close()
 plt.clf()
-plt.figure(58,figsize=(6.5,5))
+plt.clf()
+plt.figure(1,figsize=(6.5,5))
 MinMaxArray=np.ones(shape=(3,2))
 subPlot1 = plt.axes([.1,.1,.5,.7])
 MinMaxArray[0,0]=cmin
@@ -884,8 +902,8 @@ for shape_dict in m.states_info:
 	#if goodCountiesIndexfromAll[cIndex[s,c]]<-90:
 	#	continue
 
-	#x=cropYieldAll[cIndex[s,c],12]
-	x=cropYieldAll[cIndex[s,c],14]
+	#x=cropYieldAll[cIndex[s,c],12,0]
+	x=cropYieldAll[cIndex[s,c],14,0]
 	if math.isnan(x)==True or x<0:
 		b+=1
 		continue
@@ -897,16 +915,16 @@ for shape_dict in m.states_info:
 
 	y=y1+(y2-y1)/(cmax-cmin)*(x-cmin)
 	icmap=min(255,int(round(y,1)))
+	icmap=max(0,int(round(icmap,1)))
 
 	poly = Polygon(seg,facecolor=[cmapArray[icmap,0],cmapArray[icmap,1],cmapArray[icmap,2]],edgecolor=[0,0,0])
 	ax.add_patch(poly)
 
 m.drawstates(linewidth=2)
-#plt.title('2012 Corn Yield (bu/acre)')
-plt.title('2014 Corn Yield (bu/acre)')
-#plt.savefig(wdfigs+'corn_yield_2012',dpi=500)
-plt.savefig(wdfigs+'Illinois/corn_yield_2014.pdf',dpi=500)
-plt.clf()
+#plt.title('2012 Corn Yield (t/ha)')
+plt.title('2014 Corn Yield (t/ha)')
+#plt.savefig(wdfigs+'Illinois/corn_yield_2012.pdf',dpi=700)
+plt.savefig(wdfigs+'Illinois/corn_yield_2014.pdf',dpi=700)
 
 ndviAnomIllAllCounties=np.zeros(shape=(ncounties,nyears))
 eviAnomIllAllCounties=np.zeros(shape=(ncounties,nyears))
@@ -916,7 +934,7 @@ for icounty in range(ncounties):
 		ndviAnomIllAllCounties[icounty,y]=np.ma.mean(ndviAnomOnly[icounty,y,2:4])*100
 		eviAnomIllAllCounties[icounty,y]=np.ma.mean(eviAnomOnly[icounty,y,2:4])*100
 		ndwiAnomIllAllCounties[icounty,y]=np.ma.mean(ndwiAnomOnly[icounty,y,2:4])*100
-'''
+
 ##################################################################
 # NDVI
 ##################################################################
@@ -930,8 +948,10 @@ y2=255
 
 j=-1
 
+plt.cla()
+plt.close()
 plt.clf()
-plt.figure(13,figsize=(5,4))
+plt.figure(1,figsize=(6.5,5))
 MinMaxArray=np.ones(shape=(3,2))
 subPlot1 = plt.axes([.1,.1,.5,.7])
 MinMaxArray[0,0]=cmin
@@ -969,8 +989,8 @@ for shape_dict in m.states_info:
 	if goodCountiesIndexfromAll[cIndex[s,c]]<-90:
 		continue
 
-	#x=ndviAnomIllAllCounties[goodCountiesIndexfromAll[cIndex[s,c]],12]
-	x=ndviAnomIllAllCounties[goodCountiesIndexfromAll[cIndex[s,c]],14]
+	x=ndviAnomIllAllCounties[goodCountiesIndexfromAll[cIndex[s,c]],12]
+	#x=ndviAnomIllAllCounties[goodCountiesIndexfromAll[cIndex[s,c]],14]
 	if math.isnan(x)==True:
 		b+=1
 		print 'is nan'
@@ -990,12 +1010,11 @@ for shape_dict in m.states_info:
 	ax.add_patch(poly)
 
 m.drawstates(linewidth=2)
-#plt.title('2012 NDVI Anomaly *100')
-plt.title('2014 NDVI Anomaly *100')
-#plt.savefig(wdfigs+'ndvi_anom_2012',dpi=500)
-plt.savefig(wdfigs+'Illinois/ndvi_anom_2014.pdf',dpi=500)
+plt.title('2012 NDVI Anomaly *100')
+#plt.title('2014 NDVI Anomaly *100')
+plt.savefig(wdfigs+'Illinois/ndvi_anom_2012.pdf',dpi=500)
+#plt.savefig(wdfigs+'Illinois/ndvi_anom_2014.pdf',dpi=500)
 plt.clf()
-'''
 
 ##################################################################
 # EVI
@@ -1011,7 +1030,10 @@ y2=255
 
 j=-1
 
+plt.cla()
+plt.close()
 plt.clf()
+plt.figure(1,figsize=(6.5,5))
 MinMaxArray=np.ones(shape=(3,2))
 subPlot1 = plt.axes([.1,.1,.5,.7])
 MinMaxArray[0,0]=cmin
@@ -1048,12 +1070,12 @@ for shape_dict in m.states_info:
 	if goodCountiesIndexfromAll[cIndex[s,c]]<-90:
 		continue
 
-	x=eviAnomIllAllCounties[goodCountiesIndexfromAll[cIndex[s,c]],12]
-	if x>50:
-		x=-5
-	#x=eviAnomIllAllCounties[goodCountiesIndexfromAll[cIndex[s,c]],14]
+	#x=eviAnomIllAllCounties[goodCountiesIndexfromAll[cIndex[s,c]],12]
 	#if x>50:
-	#	x=2
+	#	x=-5
+	x=eviAnomIllAllCounties[goodCountiesIndexfromAll[cIndex[s,c]],14]
+	if x>50:
+		x=2
 	if math.isnan(x)==True:
 		b+=1
 		continue
@@ -1071,12 +1093,11 @@ for shape_dict in m.states_info:
 	ax.add_patch(poly)
 
 m.drawstates(linewidth=2)
-plt.title('2012 EVI Anomaly *100')
-#plt.title('2014 EVI Anomaly *100')
-plt.savefig(wdfigs+'Illinois/evi_anom_2012',dpi=500)
-#plt.savefig(wdfigs+'Illinois/evi_anom_2014',dpi=500)
+#plt.title('2012 EVI Anomaly *100')
+plt.title('2014 EVI Anomaly *100')
+#plt.savefig(wdfigs+'Illinois/evi_anom_2012.pdf',dpi=500)
+plt.savefig(wdfigs+'Illinois/evi_anom_2014.pdf',dpi=500)
 plt.clf()
-exit()
 
 ##################################################################
 # ndwi
@@ -1092,8 +1113,10 @@ y2=255
 
 j=-1
 
+plt.cla()
+plt.close()
 plt.clf()
-plt.figure(12,figsize=(5,4))
+plt.figure(1,figsize=(6.5,5))
 MinMaxArray=np.ones(shape=(3,2))
 subPlot1 = plt.axes([.1,.1,.5,.7])
 MinMaxArray[0,0]=cmin
@@ -1130,16 +1153,16 @@ for shape_dict in m.states_info:
 	if goodCountiesIndexfromAll[cIndex[s,c]]<-90:
 		continue
 
-	#x=ndwiAnomIllAllCounties[goodCountiesIndexfromAll[cIndex[s,c]],12]
-	x=ndwiAnomIllAllCounties[goodCountiesIndexfromAll[cIndex[s,c]],14]
+	x=ndwiAnomIllAllCounties[goodCountiesIndexfromAll[cIndex[s,c]],12]
+	#x=ndwiAnomIllAllCounties[goodCountiesIndexfromAll[cIndex[s,c]],14]
 	if math.isnan(x)==True:
 		b+=1
  		##x=uniform(-4,-10)
  		#x=uniform(4,11)
 		continue
 	if x<-10:
-		#x=3
-		x=-3
+		x=3
+		#x=-3
 	countyCounter+=1
 	#if x<=-.49:
 	#	significant+=1
@@ -1153,8 +1176,9 @@ for shape_dict in m.states_info:
 	ax.add_patch(poly)
 
 m.drawstates(linewidth=2)
-#plt.title('2012 NDWI Anomaly *100')
-plt.title('2014 NDWI Anomaly *100')
-#plt.savefig(wdfigs+'ndwi_anom_2012',dpi=500)
-plt.savefig(wdfigs+'ndwi_anom_2014.pdf',dpi=500)
+plt.title('2012 NDWI Anomaly *100')
+#plt.title('2014 NDWI Anomaly *100')
+plt.savefig(wdfigs+'Illinois/ndwi_anom_2012.pdf',dpi=500)
+#plt.savefig(wdfigs+'Illinois/ndwi_anom_2014.pdf',dpi=500)
 plt.clf()
+'''
