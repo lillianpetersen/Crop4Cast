@@ -165,38 +165,38 @@ def ltk_cloud_mask(X, get_rgb=False):
 	return Y
 
 def make_cmap(colors, position=None, bit=False):
-    '''
-    make_cmap takes a list of tuples which contain RGB values. The RGB
-    values may either be in 8-bit [0 to 255] (in which bit must be set to
-    True when called) or arithmetic [0 to 1] (default). make_cmap returns
-    a cmap with equally spaced colors.
-    Arrange your tuples so that the first color is the lowest value for the
-    colorbar and the last is the highest.
-    position contains values from 0 to 1 to dictate the location of each color.
-    '''
-    import matplotlib as mpl
-    import numpy as np
-    bit_rgb = np.linspace(0,1,256)
-    if position == None:
-        position = np.linspace(0,1,len(colors))
-    else:
-        if len(position) != len(colors):
-            sys.exit("position length must be the same as colors")
-        elif position[0] != 0 or position[-1] != 1:
-            sys.exit("position must start with 0 and end with 1")
-    if bit:
-        for i in range(len(colors)):
-            colors[i] = (bit_rgb[colors[i][0]],
-                         bit_rgb[colors[i][1]],
-                         bit_rgb[colors[i][2]])
-    cdict = {'red':[], 'green':[], 'blue':[]}
-    for pos, color in zip(position, colors):
-        cdict['red'].append((pos, color[0], color[0]))
-        cdict['green'].append((pos, color[1], color[1]))
-        cdict['blue'].append((pos, color[2], color[2]))
+	'''
+	make_cmap takes a list of tuples which contain RGB values. The RGB
+	values may either be in 8-bit [0 to 255] (in which bit must be set to
+	True when called) or arithmetic [0 to 1] (default). make_cmap returns
+	a cmap with equally spaced colors.
+	Arrange your tuples so that the first color is the lowest value for the
+	colorbar and the last is the highest.
+	position contains values from 0 to 1 to dictate the location of each color.
+	'''
+	import matplotlib as mpl
+	import numpy as np
+	bit_rgb = np.linspace(0,1,256)
+	if position == None:
+		position = np.linspace(0,1,len(colors))
+	else:
+		if len(position) != len(colors):
+			sys.exit("position length must be the same as colors")
+		elif position[0] != 0 or position[-1] != 1:
+			sys.exit("position must start with 0 and end with 1")
+	if bit:
+		for i in range(len(colors)):
+			colors[i] = (bit_rgb[colors[i][0]],
+						 bit_rgb[colors[i][1]],
+						 bit_rgb[colors[i][2]])
+	cdict = {'red':[], 'green':[], 'blue':[]}
+	for pos, color in zip(position, colors):
+		cdict['red'].append((pos, color[0], color[0]))
+		cdict['green'].append((pos, color[1], color[1]))
+		cdict['blue'].append((pos, color[2], color[2]))
 
-    cmap = mpl.colors.LinearSegmentedColormap('my_colormap',cdict,256)
-    return cmap
+	cmap = mpl.colors.LinearSegmentedColormap('my_colormap',cdict,256)
+	return cmap
 
 colors = [(.4,0,.6), (0,0,.7), (0,.6,1), (.9,.9,1), (1,.8,.8), (1,1,0), (.8,1,.5), (.1,.7,.1), (.1,.3,.1)] 
 my_cmap = make_cmap(colors)
@@ -205,9 +205,9 @@ my_cmap = make_cmap(colors)
 time1=np.round(time.time(),2)
 
 wd='/Users/lilllianpetersen/Google Drive/science_fair/'
-wdvars='/Users/lilllianpetersen/saved_vars/'
-wdfigs='/Users/lilllianpetersen/figures/'
-wddata='/Users/lilllianpetersen/data/'
+wdvars='/Users/lilllianpetersen/science_fair_2018/saved_vars/'
+wdfigs='/Users/lilllianpetersen/science_fair_2018/figures/'
+wddata='/Users/lilllianpetersen/science_fair_2018/data/'
 
 countylats=np.load(wdvars+'county_lats.npy')
 countylons=np.load(wdvars+'county_lons.npy')
@@ -218,7 +218,7 @@ stateName=np.load(wdvars+'stateName.npy')
 #countryNum='26'
 
 start='2013-01-01'
-end='2018-01-03'
+end='2020-02-00'
 nyears=5
 nmonths=12
 makePlots=False
@@ -229,7 +229,7 @@ res=120
 badarrays=0
 
 now = datetime.datetime.now()
-start='2018-01-01'
+start='2019-01-01'
 end=now.strftime("%Y-%m-%d")
 nyears=1
 nmonths=9
@@ -266,20 +266,20 @@ for line in fmonths:
 countriesWithCurrentSeason=[]
 for icountry in range(47):
 	corrMonth=corrMonthArray[icountry]
-	if corrMonth<0:
+	if (corrMonth>=6 and corrMonth!=99):
 		#print icountry, corrMonth
 		countriesWithCurrentSeason.append(icountry)
 
 for countryNum in countriesWithCurrentSeason:
-	#if countryNum<=23:
-	if countryNum>23:
-		continue
+	if countryNum==1: continue
+
+	corrMonth = corrMonthArray[countryNum]
 	
-	start='2018-0'+str(int(corrMonth-2))+'-01'
+	start='2019-0'+str(int(corrMonth-2))+'-01'
 	if corrMonth+2>9: # over current month
 		end=end
 	else:
-		end='2018-0'+str(int(corrMonth+2))+'-31'
+		end='2019-0'+str(int(corrMonth+2))+'-31'
 	print start,end
 
 	f=open(wddata+'africa_latlons.csv')
@@ -291,7 +291,7 @@ for countryNum in countriesWithCurrentSeason:
 			startlat=float(tmp[2])
 			startlon=float(tmp[3])
 			pixels=int(tmp[4])
-	
+
 	dltile=dl.raster.dltile_from_latlon(startlat,startlon,res,pixels,padding)
 	print '\n\n'
 	print country
@@ -339,13 +339,13 @@ for countryNum in countriesWithCurrentSeason:
 	Mask=np.ones(shape=(140,pixels,pixels)) 
 	ndwiAll=np.zeros(shape=(140,pixels,pixels))
 	####################
-	k=-1
+	nGoodImage=-1
 	d=-1
-	for j in range(n_images):
+	for nImage in range(n_images):
 	
-		monthAll[j]=str(images['features'][j]['id'][25:27])
+		monthAll[nImage]=str(images['features'][nImage]['id'][25:27])
 	
-		if monthAll[j]!=monthAll[j-1] and j!=0:
+		if monthAll[nImage]!=monthAll[nImage-1] and nImage!=0:
 			d=-1
 			for v in range(pixels):
 				for h in range(pixels):
@@ -359,15 +359,15 @@ for countryNum in countriesWithCurrentSeason:
 					eviClimo[m,v,h]+=eviMonthAvg[y,m,v,h]
 					ndwiClimo[m,v,h]+=ndwiMonthAvg[y,m,v,h]
 	
-			if not os.path.exists(wdvars+country+'/2018'):
-				os.makedirs(wdvars+country+'/2018')		 
-			np.save(wdvars+country+'/2018/ndviClimoUnprocessed',ndviClimo)
-			np.save(wdvars+country+'/2018/eviClimoUnprocessed',eviClimo)
-			np.save(wdvars+country+'/2018/ndwiClimoUnprocessed',ndwiClimo)
-			np.save(wdvars+country+'/2018/climoCounterUnprocessed',climoCounter)
-			np.save(wdvars+country+'/2018/ndviMonthAvgUnprocessed',ndviMonthAvg)
-			np.save(wdvars+country+'/2018/eviMonthAvgUnprocessed',eviMonthAvg) 
-			np.save(wdvars+country+'/2018/ndwiMonthAvgUnprocessed',ndwiMonthAvg)
+			if not os.path.exists(wdvars+country+'/2020'):
+				os.makedirs(wdvars+country+'/2020')		 
+			np.save(wdvars+country+'/2020/ndviClimoUnprocessed',ndviClimo)
+			np.save(wdvars+country+'/2020/eviClimoUnprocessed',eviClimo)
+			np.save(wdvars+country+'/2020/ndwiClimoUnprocessed',ndwiClimo)
+			np.save(wdvars+country+'/2020/climoCounterUnprocessed',climoCounter)
+			np.save(wdvars+country+'/2020/ndviMonthAvgUnprocessed',ndviMonthAvg)
+			np.save(wdvars+country+'/2020/eviMonthAvgUnprocessed',eviMonthAvg) 
+			np.save(wdvars+country+'/2020/ndwiMonthAvgUnprocessed',ndwiMonthAvg)
 	
 			d=-1
 			ndviAll=-9999*np.ones(shape=(140,pixels,pixels))
@@ -377,9 +377,9 @@ for countryNum in countriesWithCurrentSeason:
 	
 	
 		# get the scene id
-		#scene = images['features'][indexSorted[j]]['key']
-		#scene = images['features'][j]['key']
-		scene = images['features'][j]['id']
+		#scene = images['features'][indexSorted[nImage]]['key']
+		#scene = images['features'][nImage]['key']
+		scene = images['features'][nImage]['id']
 		#print scene
 		###############################################
 		# NDVI
@@ -406,6 +406,7 @@ for countryNum in countriesWithCurrentSeason:
 		except:
 			print('ndvi: %s could not be retreived' % scene)
 			continue
+		if np.amax(arrNDVI)==0: continue
 	
 		#######################
 		# Get cloud data	  #
@@ -425,7 +426,7 @@ for countryNum in countriesWithCurrentSeason:
 				)
 		except:
 			print('cloudMask: %s could not be retreived' % scene)
-			k-=1
+			nGoodImage-=1
 			d-=1
 			continue 
 	
@@ -469,19 +470,19 @@ for countryNum in countriesWithCurrentSeason:
 			print 'bad: continued'
 			continue
 	
-		k+=1
+		nGoodImage+=1
 		d+=1
 		
 		###############################################
 		# time
 		############################################### 
 	
-		#xtime=str(images['features'][j]['id'][64:74]) # MODIS test
-		xtime=str(images['features'][j]['id'][20:30]) # old MODIS
-		#xtime.append(str(images['features'][j]['properties']['acquired'][0:10])) Landsat
+		#xtime=str(images['features'][nImage]['id'][64:74]) # MODIS test
+		xtime=str(images['features'][nImage]['id'][20:30]) # old MODIS
+		#xtime.append(str(images['features'][nImage]['properties']['acquired'][0:10])) Landsat
 		date=xtime
 		year=int(xtime[0:4])
-		if k==0:
+		if nGoodImage==0:
 			startyear=year
 			#nyears=2018-startyear
 		y=int(year-startyear)
@@ -497,7 +498,7 @@ for countryNum in countriesWithCurrentSeason:
 	
 		time2=time.time()
 	
-		print date, k, np.round(np.sum(cloudMask)/(pixels*pixels),3), d, np.round(time2-time1,1)
+		print date, nGoodImage, np.round(np.sum(cloudMask)/(pixels*pixels),3), d, np.round(time2-time1,1)
 		sys.stdout.flush()
 		#cloudMask = arrCloud[:, :, 0] != 0 
 		#cloudMask = arrCloud[:, :, 1] == 0 #for desert
@@ -509,18 +510,18 @@ for countryNum in countriesWithCurrentSeason:
 	
 		if np.amin(Mask[d])==1:
 			print 'bad: continued'
-			k-=1
+			nGoodImage-=1
 			d-=1
 			continue
 	
-		#if k==1:
+		#if nGoodImage==1:
 		#	exit()
-		#Mask[:,:,k]=1-Mask[:,:,k]
-		#Mask[:,:,k]=ndimage.binary_dilation(Mask[:,:,k],iterations=3)
-		#Mask[:,:,k]=1-Mask[:,:,k]
-		#cloudMask[:,:,k]=1-cloudMask[:,:,k]
-		#cloudMask[:,:,k]=ndimage.binary_dilation(Mask[:,:,k],iterations=3)
-		#cloudMask[:,:,k]=1-cloudMask[:,:,k]
+		#Mask[:,:,nGoodImage]=1-Mask[:,:,nGoodImage]
+		#Mask[:,:,nGoodImage]=ndimage.binary_dilation(Mask[:,:,nGoodImage],iterations=3)
+		#Mask[:,:,nGoodImage]=1-Mask[:,:,nGoodImage]
+		#cloudMask[:,:,nGoodImage]=1-cloudMask[:,:,nGoodImage]
+		#cloudMask[:,:,nGoodImage]=ndimage.binary_dilation(Mask[:,:,nGoodImage],iterations=3)
+		#cloudMask[:,:,nGoodImage]=1-cloudMask[:,:,nGoodImage]
 	
 		if makePlots:
 			if not os.path.exists(wdfigs+sName+'/'+cName):
@@ -532,7 +533,7 @@ for countryNum in countriesWithCurrentSeason:
 			plt.title('NDVI: '+cName+', '+sName+', '+str(date), fontsize=20)
 			cb = plt.colorbar()
 			cb.set_label("NDVI")
-			plt.savefig(wdfigs+sName+'/'+cName+'/ndvi_'+str(date)+'_'+str(k)+'.jpg')
+			plt.savefig(wdfigs+sName+'/'+cName+'/ndvi_'+str(date)+'_'+str(nGoodImage)+'.jpg')
 			plt.clf() 
 	
 		ndviAll[d,:,:]=np.ma.masked_array(arrNDVI[:,:,0],Mask[d,:,:])
@@ -548,7 +549,7 @@ for countryNum in countriesWithCurrentSeason:
 			plt.title('Cloud Mask: '+cName+', '+sName+', '+str(date), fontsize=20)
 			#cb = plt.colorbar()
 			#cb.set_label("Cloud")
-			plt.savefig(wdfigs+sName+'/'+cName+'/cloud_'+str(date)+'_'+str(k)+'.jpg')
+			plt.savefig(wdfigs+sName+'/'+cName+'/cloud_'+str(date)+'_'+str(nGoodImage)+'.jpg')
 			plt.clf()
 			
 	
@@ -571,7 +572,7 @@ for countryNum in countriesWithCurrentSeason:
 				)
 		except:
 			print('evi: %s could not be retreived' % scene)
-			k-=1
+			nGoodImage-=1
 			d-=1
 			continue
 	
@@ -584,7 +585,7 @@ for countryNum in countriesWithCurrentSeason:
 			plt.title('EVI: '+cName+', '+sName+', '+str(date), fontsize=20)
 			cb = plt.colorbar()
 			cb.set_label("EVI")
-			plt.savefig(wdfigs+sName+'/'+cName+'/evi_'+str(date)+'_'+str(k)+'.jpg')
+			plt.savefig(wdfigs+sName+'/'+cName+'/evi_'+str(date)+'_'+str(nGoodImage)+'.jpg')
 			plt.clf() 
 	
 		eviAll[d,:,:]=np.ma.masked_array(arrEVI[:,:,0],Mask[d,:,:])
@@ -608,7 +609,7 @@ for countryNum in countriesWithCurrentSeason:
 				)
 		except:
 			print('nir: %s could not be retreived' % scene)
-			k-=1
+			nGoodImage-=1
 			d-=1
 			continue
 	
@@ -629,7 +630,7 @@ for countryNum in countriesWithCurrentSeason:
 				)
 		except:
 			print('green: %s could not be retreived' % scene)
-			k-=1
+			nGoodImage-=1
 			d-=1
 			continue
 		  
@@ -644,7 +645,7 @@ for countryNum in countriesWithCurrentSeason:
 			plt.title('NDWI:' +cName+', '+sName+', '+str(date), fontsize=20)
 			cb = plt.colorbar()
 			cb.set_label("NDWI")
-			plt.savefig(wdfigs+sName+'/'+cName+'/ndwi_'+str(date)+'_'+str(k)+'.jpg')
+			plt.savefig(wdfigs+sName+'/'+cName+'/ndwi_'+str(date)+'_'+str(nGoodImage)+'.jpg')
 			plt.clf()
 		
 		###############################################
@@ -666,10 +667,10 @@ for countryNum in countriesWithCurrentSeason:
 			plt.figure(figsize=[10,10])
 			plt.imshow(arr)
 			plt.title('Visible: '+cName+', '+sName+', '+str(date), fontsize=20)
-			plt.savefig(wdfigs+sName+'/'+cName+'/visual_'+str(date)+'_'+str(k)+'.jpg')
+			plt.savefig(wdfigs+sName+'/'+cName+'/visual_'+str(date)+'_'+str(nGoodImage)+'.jpg')
 	
 		if makePlots:
-			if k==5:
+			if nGoodImage==5:
 				exit()
 	
 		
@@ -691,13 +692,13 @@ for countryNum in countriesWithCurrentSeason:
 	
 	if not os.path.exists(wdvars+country):
 		os.makedirs(wdvars+country)		 
-	np.save(wdvars+country+'/2018/ndviClimoUnprocessed',ndviClimo)
-	np.save(wdvars+country+'/2018/eviClimoUnprocessed',eviClimo)
-	np.save(wdvars+country+'/2018/ndwiClimoUnprocessed',ndwiClimo)
-	np.save(wdvars+country+'/2018/climoCounterUnprocessed',climoCounter)
-	np.save(wdvars+country+'/2018/ndviMonthAvgUnprocessed',ndviMonthAvg)
-	np.save(wdvars+country+'/2018/eviMonthAvgUnprocessed',eviMonthAvg) 
-	np.save(wdvars+country+'/2018/ndwiMonthAvgUnprocessed',ndwiMonthAvg)
+	np.save(wdvars+country+'/2020/ndviClimoUnprocessed',ndviClimo)
+	np.save(wdvars+country+'/2020/eviClimoUnprocessed',eviClimo)
+	np.save(wdvars+country+'/2020/ndwiClimoUnprocessed',ndwiClimo)
+	np.save(wdvars+country+'/2020/climoCounterUnprocessed',climoCounter)
+	np.save(wdvars+country+'/2020/ndviMonthAvgUnprocessed',ndviMonthAvg)
+	np.save(wdvars+country+'/2020/eviMonthAvgUnprocessed',eviMonthAvg) 
+	np.save(wdvars+country+'/2020/ndwiMonthAvgUnprocessed',ndwiMonthAvg)
 
 #for tile in range(len(dltiles['features'])):
 #	tile=30

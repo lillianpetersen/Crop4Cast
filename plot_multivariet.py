@@ -49,7 +49,7 @@ def plot_figs(fig_num, elev, azim, X_train, clf):
     #ax.w_yaxis.set_ticklabels([])
     #ax.w_zaxis.set_ticklabels([])
     plt.title('Multivariate Regression')
-    plt.savefig(wdfigs+'Illinois/multivariet_regression_ndviAnom',dpi=700)
+    plt.savefig(wdfigs+'Illinois/multivariate_regression_ndviAnom',dpi=700)
 
 
 #Generate the three different figures from different views
