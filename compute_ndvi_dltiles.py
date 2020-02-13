@@ -5,10 +5,10 @@ import numpy as np
 import math
 import sys
 from sys import exit
-import sklearn
-from sklearn import svm
+#import sklearn
+#from sklearn import svm
 import time
-from sklearn.preprocessing import StandardScaler
+#from sklearn.preprocessing import StandardScaler
 import datetime
 #from celery import Celery
 from scipy import ndimage
@@ -17,36 +17,6 @@ from scipy import ndimage
 # Function		 #
 ####################
 ### Running mean/Moving average
-def movingaverage(interval, window_size):
-	window = np.ones(int(window_size))/float(window_size)
-	return np.convolve(interval, window, 'same')
-	
-def variance(x):   
-	'''function to compute the variance (std dev squared)'''
-	xAvg=np.mean(x)
-	xOut=0.
-	for k in range(len(x)):
-		xOut=xOut+(x[k]-xAvg)**2
-	xOut=xOut/(k+1)
-	return xOut
-
-def rolling_median(var,window):
-	'''var: array-like. One dimension
-	window: Must be odd'''
-	n=len(var)
-	halfW=int(window/2)
-	med=np.zeros(shape=(var.shape))
-	for j in range(halfW,n-halfW):
-		med[j]=np.ma.median(var[j-halfW:j+halfW+1])
-	 
-	for j in range(0,halfW):
-		w=2*j+1
-		med[j]=np.ma.median(var[j-w/2:j+w/2+1])
-		i=n-j-1
-		med[i]=np.ma.median(var[i-w/2:i+w/2+1])
-	
-	return med	
-	
 def mask_water(image):
 	shape = image.shape
 	length = image.size
@@ -226,13 +196,11 @@ print 'makePlots=',makePlots
 padding = 0
 res=120
 
-badarrays=0
-
 now = datetime.datetime.now()
-start='2019-01-01'
-end=now.strftime("%Y-%m-%d")
-nyears=1
-nmonths=9
+#start='2019-01-01'
+#end=now.strftime("%Y-%m-%d")
+nyears=2
+nmonths=12
 
 fmonths=open(wddata+'max_ndviMonths_final.csv')
 corrMonthArray=99*np.ones(shape=(48))
@@ -266,28 +234,32 @@ for line in fmonths:
 countriesWithCurrentSeason=[]
 for icountry in range(47):
 	corrMonth=corrMonthArray[icountry]
-	if (corrMonth>=6 and corrMonth!=99):
+	if (corrMonth>=6 and corrMonth!=99): # Height of season August or later
 		#print icountry, corrMonth
 		countriesWithCurrentSeason.append(icountry)
 
 for countryNum in countriesWithCurrentSeason:
-	if countryNum==1: continue
 
-	corrMonth = corrMonthArray[countryNum]
+	corrMonth = corrMonthArray[countryNum]+1 # 1=Jan, 2=Feb, etc
 	
 	start='2019-0'+str(int(corrMonth-2))+'-01'
-	if corrMonth+2>9: # over current month
-		end=end
-	else:
-		end='2019-0'+str(int(corrMonth+2))+'-31'
-	print start,end
+	#if corrMonth+2>9: # over current month
+	#	end=end
+	if corrMonth<=7: # July
+		end='2019-0'+str(int(corrMonth+2))+'-30'
+	elif corrMonth==8 or corrMonth==9 or corrMonth==10: # August + September + October
+		end='2019-'+str(int(corrMonth+2))+'-30'
+	elif corrMonth==11: # November
+		end='2020-01-30'
+	elif corrMonth==12: # December
+		start='2019-'+str(int(corrMonth-2))+'-01'
+		end='2020-02-30'
 
 	f=open(wddata+'africa_latlons.csv')
 	for line in f:
 		tmp=line.split(',')
 		if tmp[0]==str(countryNum):
 			country=tmp[1]
-			print country
 			startlat=float(tmp[2])
 			startlon=float(tmp[3])
 			pixels=int(tmp[4])
@@ -295,6 +267,7 @@ for countryNum in countriesWithCurrentSeason:
 	dltile=dl.raster.dltile_from_latlon(startlat,startlon,res,pixels,padding)
 	print '\n\n'
 	print country
+	print start,end
 	
 	images= dl.metadata.search(
 		#products='5151d2825f5e29ff129f86d834946363ff3f7e57:modis:09:CREFL_v2_test',
@@ -323,7 +296,7 @@ for countryNum in countriesWithCurrentSeason:
 	####################
 	# Define Variables #
 	####################
-	print pixels
+	print pixels,'\n'
 	ndviAnom=-9999*np.ones(shape=(nyears,nmonths,pixels,pixels))
 	ndviMonthAvg=np.zeros(shape=(nyears,nmonths,pixels,pixels))
 	eviMonthAvg=np.zeros(shape=(nyears,nmonths,pixels,pixels))
