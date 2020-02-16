@@ -7,8 +7,7 @@ import sys
 from sys import exit
 import sklearn
 from sklearn import svm
-import time
-from sklearn.preprocessing import StandardScaler
+import time from sklearn.preprocessing import StandardScaler
 
 def make_cmap(colors, position=None, bit=False):
 	'''
