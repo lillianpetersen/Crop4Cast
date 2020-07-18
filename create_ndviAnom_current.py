@@ -5,9 +5,6 @@ import numpy as np
 import math
 import sys
 from sys import exit
-import sklearn
-from sklearn import svm
-import time from sklearn.preprocessing import StandardScaler
 
 def make_cmap(colors, position=None, bit=False):
 	'''
@@ -62,11 +59,9 @@ countylons=np.load(wdvars+'county_lons.npy')
 countyName=np.load(wdvars+'countyName.npy')
 stateName=np.load(wdvars+'stateName.npy')
 
-startMonth=4
-endMonth=13
-#endMonth=int(time.datetime.datetime.now().strftime("%Y-%m-%d").split('-')[1])
-#nmonths=endMonth
-nmonths=13
+startMonth=0
+endMonth=8
+nmonths=12
 makePlots=False
 
 monthName=['January','Febuary','March','April','May','June','July','August','September','October','November','December']
@@ -95,19 +90,19 @@ for icountry in range(47):
 			sName=country
 
 			corrMonth=tmp[2][:-1]
-			if len(corrMonth)>2:
+			if len(corrMonth)>2: # if one season
 				months=corrMonth.split('/')
 				month1=corrMonth[0]
 				month2=corrMonth[1]
 				corrMonth=month1
-			corrMonth=int(corrMonth)+1
+			corrMonth=int(corrMonth)
 
-			if corrMonth>=7: # July
-				print '\nRunning',country, ' month = '+monthName[corrMonth-1]
+			if (corrMonth>=2 and corrMonth<6 and corrMonth!=99): # Select Growing Season
+				print '\nRunning',country, ' month = '+monthName[corrMonth]
 				Good=True
 				break
 			else:
-				print country, 'has other season'
+				#print country, 'has other season'
 				break
 	if Good==False:
 		continue
@@ -124,36 +119,38 @@ for icountry in range(47):
 	ndwiAvgSum=np.zeros(shape=(nmonths))
 
 	########### load 2020 vars ###########
-	climoCounterAll = np.load(wdvars+sName+'/2020/climoCounterUnprocessed.npy')
-	ndviMonthAvgU=np.load(wdvars+sName+'/2020/ndviMonthAvgUnprocessed.npy')
-	eviMonthAvgU=np.load(wdvars+sName+'/2020/eviMonthAvgUnprocessed.npy')
-	ndwiMonthAvgU=np.load(wdvars+sName+'/2020/ndwiMonthAvgUnprocessed.npy')
+	climoCounterAll = np.load(wdvars+sName+'/2020_july/climoCounterUnprocessed.npy')
+	ndviMonthAvgU=np.load(wdvars+sName+'/2020_july/ndviMonthAvgUnprocessed.npy')
+	eviMonthAvgU=np.load(wdvars+sName+'/2020_july/eviMonthAvgUnprocessed.npy')
+	ndwiMonthAvgU=np.load(wdvars+sName+'/2020_july/ndwiMonthAvgUnprocessed.npy')
 	npixels = climoCounterAll.shape[-1]
 
-	climoCounterAll = np.reshape(climoCounterAll, (24,npixels,npixels), order='C')[:13]
-	ndviMonthAvgU = np.reshape(ndviMonthAvgU, (24,npixels,npixels), order='C')[:13]
-	eviMonthAvgU = np.reshape(eviMonthAvgU, (24,npixels,npixels), order='C')[:13]
-	ndwiMonthAvgU = np.reshape(ndwiMonthAvgU, (24,npixels,npixels), order='C')[:13]
+	# if over year boundary
+	#climoCounterAll = np.reshape(climoCounterAll, (24,npixels,npixels), order='C')[:13]
+	#ndviMonthAvgU = np.reshape(ndviMonthAvgU, (24,npixels,npixels), order='C')[:13]
+	#eviMonthAvgU = np.reshape(eviMonthAvgU, (24,npixels,npixels), order='C')[:13]
+	#ndwiMonthAvgU = np.reshape(ndwiMonthAvgU, (24,npixels,npixels), order='C')[:13]
 	
 	# To get rid of extra years
-	#climoCounterAll=climoCounterAll[0]
-	#ndviMonthAvgU=ndviMonthAvgU[0]
-	#eviMonthAvgU=eviMonthAvgU[0]
-	#ndwiMonthAvgU=ndwiMonthAvgU[0]
+	climoCounterAll = climoCounterAll[0]
+	ndviMonthAvgU = ndviMonthAvgU[0]
+	eviMonthAvgU = eviMonthAvgU[0]
+	ndwiMonthAvgU = ndwiMonthAvgU[0]
 	######################################
 
 	########### Load Monthly Climatologies ###########
-	ndviClimo = np.zeros(shape=(13,npixels,npixels))
-	eviClimo = np.zeros(shape=(13,npixels,npixels))
-	ndwiClimo = np.zeros(shape=(13,npixels,npixels))
+	ndviClimo = np.zeros(shape=(12,npixels,npixels))
+	eviClimo = np.zeros(shape=(12,npixels,npixels))
+	ndwiClimo = np.zeros(shape=(12,npixels,npixels))
 
-	ndviClimo[0:12] = np.load(wdvars+sName+'/ndviClimo.npy')
-	eviClimo[0:12] = np.load(wdvars+sName+'/eviClimo.npy')
-	ndwiClimo[0:12] = np.load(wdvars+sName+'/ndwiClimo.npy')
+	ndviClimo = np.load(wdvars+sName+'/ndviClimo.npy')
+	eviClimo = np.load(wdvars+sName+'/eviClimo.npy')
+	ndwiClimo = np.load(wdvars+sName+'/ndwiClimo.npy')
 
-	ndviClimo[12] = ndviClimo[0]
-	eviClimo[12] = eviClimo[0]
-	ndwiClimo[12] = ndwiClimo[0]
+	# if over year boundary
+	#ndviClimo[12] = ndviClimo[0]
+	#eviClimo[12] = eviClimo[0]
+	#ndwiClimo[12] = ndwiClimo[0]
 	##################################################
 
 	vlen=climoCounterAll.shape[1]
@@ -210,10 +207,10 @@ for icountry in range(47):
 	print ndviAnom[:]
 	print ndviAvg[:],'\n'
 	
-	np.save(wdvars+sName+'/2020/ndviAnom',ndviAnom)
-	np.save(wdvars+sName+'/2020/eviAnom',eviAnom)
-	np.save(wdvars+sName+'/2020/ndwiAnom',ndwiAnom)
+	np.save(wdvars+sName+'/2020_july/ndviAnom',ndviAnom)
+	np.save(wdvars+sName+'/2020_july/eviAnom',eviAnom)
+	np.save(wdvars+sName+'/2020_july/ndwiAnom',ndwiAnom)
 		
-	np.save(wdvars+sName+'/2020/ndviAvg',ndviAvg)
-	np.save(wdvars+sName+'/2020/eviAvg',eviAvg)
-	np.save(wdvars+sName+'/2020/ndwiAvg',ndwiAvg)
+	np.save(wdvars+sName+'/2020_july/ndviAvg',ndviAvg)
+	np.save(wdvars+sName+'/2020_july/eviAvg',eviAvg)
+	np.save(wdvars+sName+'/2020_july/ndwiAvg',ndwiAvg)

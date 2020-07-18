@@ -184,8 +184,8 @@ countylons=np.load(wdvars+'county_lons.npy')
 countyName=np.load(wdvars+'countyName.npy')
 stateName=np.load(wdvars+'stateName.npy')
 
-recentSeason = False
-since2018 = True
+recentSeason = True
+since2018 = False
 
 start='2013-01-01'
 end='2020-02-00'
@@ -199,7 +199,7 @@ res=120
 now = datetime.datetime.now()
 #start='2019-01-01'
 #end=now.strftime("%Y-%m-%d")
-nyears=2
+nyears=1
 nmonths=12
 
 fmonths=open(wddata+'max_ndviMonths_final.csv')
@@ -210,7 +210,7 @@ for line in fmonths:
 	icountry=int(tmp1[0])
 	countryList.append(tmp1[1])
 	corrMonth=tmp1[2][:-1]
-	if len(corrMonth)>2:
+	if len(corrMonth)>2: # if one season
 		months=corrMonth.split('/')
 		month1=int(months[0])
 		month2=int(months[1])
@@ -234,26 +234,25 @@ for line in fmonths:
 countriesWithCurrentSeason=[]
 for icountry in range(47):
 	corrMonth=corrMonthArray[icountry]
-	if (corrMonth>=6 and corrMonth!=99): # Height of season August or later
+	if (corrMonth>=2 and corrMonth<6 and corrMonth!=99): # Height of season August or later
 		#print icountry, corrMonth
 		countriesWithCurrentSeason.append(icountry)
 
 for countryNum in countriesWithCurrentSeason:
-	if countryNum!=6: continue
-
 	corrMonth = corrMonthArray[countryNum]+1 # 1=Jan, 2=Feb, etc
 	
 	if recentSeason:
-		start='2019-0'+str(int(corrMonth-2))+'-01'
-		if corrMonth<=7: # July
-			end='2019-0'+str(int(corrMonth+2))+'-30'
-		elif corrMonth==8 or corrMonth==9 or corrMonth==10: # August + September + October
-			end='2019-'+str(int(corrMonth+2))+'-30'
-		elif corrMonth==11: # November
-			end='2020-01-30'
-		elif corrMonth==12: # December
-			start='2019-'+str(int(corrMonth-2))+'-01'
-			end='2020-02-30'
+		start='2020-0'+str(int(corrMonth-2))+'-01'
+		end='2020-0'+str(int(corrMonth+2))+'-30'
+		#if corrMonth<=7: # July
+		#	end='2019-0'+str(int(corrMonth+2))+'-30'
+		#elif corrMonth==8 or corrMonth==9 or corrMonth==10: # August + September + October
+		#	end='2019-'+str(int(corrMonth+2))+'-30'
+		#elif corrMonth==11: # November
+		#	end='2020-01-30'
+		#elif corrMonth==12: # December
+		#	start='2019-'+str(int(corrMonth-2))+'-01'
+		#	end='2020-02-30'
 	elif since2018:
 		start = '2018-01-10'
 		end = '2019-12-30'
@@ -317,6 +316,7 @@ for countryNum in countriesWithCurrentSeason:
 	####################
 	nGoodImage=-1
 	d=-1
+
 	for nImage in range(n_images):
 	
 		monthAll[nImage]=str(images['features'][nImage]['id'][25:27])
@@ -336,15 +336,15 @@ for countryNum in countriesWithCurrentSeason:
 					ndwiClimo[m,v,h]+=ndwiMonthAvg[y,m,v,h]
 	
 			if recentSeason:
-				if not os.path.exists(wdvars+country+'/2020'):
-					os.makedirs(wdvars+country+'/2020')		 
-				np.save(wdvars+country+'/2020/ndviClimoUnprocessed',ndviClimo)
-				np.save(wdvars+country+'/2020/eviClimoUnprocessed',eviClimo)
-				np.save(wdvars+country+'/2020/ndwiClimoUnprocessed',ndwiClimo)
-				np.save(wdvars+country+'/2020/climoCounterUnprocessed',climoCounter)
-				np.save(wdvars+country+'/2020/ndviMonthAvgUnprocessed',ndviMonthAvg)
-				np.save(wdvars+country+'/2020/eviMonthAvgUnprocessed',eviMonthAvg) 
-				np.save(wdvars+country+'/2020/ndwiMonthAvgUnprocessed',ndwiMonthAvg)
+				if not os.path.exists(wdvars+country+'/2020_july'):
+					os.makedirs(wdvars+country+'/2020_july')		 
+				np.save(wdvars+country+'/2020_july/ndviClimoUnprocessed',ndviClimo)
+				np.save(wdvars+country+'/2020_july/eviClimoUnprocessed',eviClimo)
+				np.save(wdvars+country+'/2020_july/ndwiClimoUnprocessed',ndwiClimo)
+				np.save(wdvars+country+'/2020_july/climoCounterUnprocessed',climoCounter)
+				np.save(wdvars+country+'/2020_july/ndviMonthAvgUnprocessed',ndviMonthAvg)
+				np.save(wdvars+country+'/2020_july/eviMonthAvgUnprocessed',eviMonthAvg) 
+				np.save(wdvars+country+'/2020_july/ndwiMonthAvgUnprocessed',ndwiMonthAvg)
 			elif since2018:
 				if not os.path.exists(wdvars+country+'/since2018'):
 					os.makedirs(wdvars+country+'/since2018')		 
@@ -678,13 +678,13 @@ for countryNum in countriesWithCurrentSeason:
 			ndwiClimo[m,v,h]+=ndwiMonthAvg[y,m,v,h]
 	
 	if recentSeason:
-		np.save(wdvars+country+'/2020/ndviClimoUnprocessed',ndviClimo)
-		np.save(wdvars+country+'/2020/eviClimoUnprocessed',eviClimo)
-		np.save(wdvars+country+'/2020/ndwiClimoUnprocessed',ndwiClimo)
-		np.save(wdvars+country+'/2020/climoCounterUnprocessed',climoCounter)
-		np.save(wdvars+country+'/2020/ndviMonthAvgUnprocessed',ndviMonthAvg)
-		np.save(wdvars+country+'/2020/eviMonthAvgUnprocessed',eviMonthAvg) 
-		np.save(wdvars+country+'/2020/ndwiMonthAvgUnprocessed',ndwiMonthAvg)
+		np.save(wdvars+country+'/2020_july/ndviClimoUnprocessed',ndviClimo)
+		np.save(wdvars+country+'/2020_july/eviClimoUnprocessed',eviClimo)
+		np.save(wdvars+country+'/2020_july/ndwiClimoUnprocessed',ndwiClimo)
+		np.save(wdvars+country+'/2020_july/climoCounterUnprocessed',climoCounter)
+		np.save(wdvars+country+'/2020_july/ndviMonthAvgUnprocessed',ndviMonthAvg)
+		np.save(wdvars+country+'/2020_july/eviMonthAvgUnprocessed',eviMonthAvg) 
+		np.save(wdvars+country+'/2020_july/ndwiMonthAvgUnprocessed',ndwiMonthAvg)
 	if since2018:
 		np.save(wdvars+country+'/since2018/ndviClimoUnprocessed',ndviClimo)
 		np.save(wdvars+country+'/since2018/eviClimoUnprocessed',eviClimo)
