@@ -77,16 +77,39 @@ padding = 0
 res = 120
 
 ### Get list of countries
-countryList = []
-fmonths = open(wddata+'max_ndviMonths_final.csv')
+fmonths=open(wddata+'max_ndviMonths_final.csv')
+corrMonthArray=99*np.ones(shape=(48))
+countryList = np.zeros(shape=48,dtype='object')
 for line in fmonths:
-	tmp1 = line.split(',')
-	icountry = int(tmp1[0])
-	countryList.append(tmp1[1])
+	tmp1=line.split(',')
+	icountry=int(tmp1[0])
+	countryList[icountry] = tmp1[1]
+	corrMonth=tmp1[2][:-1]
+	if len(corrMonth)>2: # if two seasons
+		months=corrMonth.split('/')
+		month1=int(months[0])
+		month2=int(months[1])
+		#currentMonth=int(datetime.datetime.now().strftime("%Y-%m-%d")[5:7])
+		#month1toNow=-1*month1-currentMonth
+		#month2toNow=-1*month2-currentMonth
+		#if month2toNow<0:
+		corrMonth = month1
+		#elif month2toNow>0:
+		#	corrMonth=month2
+
+	corrMonthArray[icountry]=corrMonth
+
+countriesWithCurrentSeason=[]
+for icountry in range(48):
+	corrMonth = corrMonthArray[icountry]
+	if (corrMonth<7 and corrMonth!=99): # Height of season August or later
+		print icountry, corrMonth, countryList[icountry]
+		countriesWithCurrentSeason.append(icountry)
 
 ### Loop through countries to get satellite imagery
-for countryNum in range(len(countryList)+1):
-	if countryNum==0: continue # no country with index 0
+#for countryNum in countriesWithCurrentSeason:
+for countryNum in range(1,len(countryList)+1):
+	if countryNum!=44: continue # start at Tanzania
 
 	f = open(wddata+'africa_latlons.csv')
 	for line in f:
@@ -96,7 +119,7 @@ for countryNum in range(len(countryList)+1):
 			startlat = float(tmp[2])
 			startlon = float(tmp[3])
 			pixels = int(tmp[4])
-
+	
 	dltile = dl.raster.dltile_from_latlon(startlat,startlon,res,pixels,padding)
 	print '\n\n'
 	print country
@@ -104,7 +127,8 @@ for countryNum in range(len(countryList)+1):
 	
 	### Retrieve list of images over area for selected time
 	images =  dl.metadata.search(
-		products = 'modis:09:CREFL',
+		#products = 'modis:09:CREFL',
+		products = 'modis:09:v2',
 		start_time = start,
 		end_time = end,
 		cloud_fraction = .8,
@@ -119,7 +143,8 @@ for countryNum in range(len(countryList)+1):
 	n_images = len(images['features'])
 	print('Number of image matches: %d' % n_images)
 	
-	band_info = dl.metadata.bands(products='modis:09:CREFL')
+	#band_info = dl.metadata.bands(products='modis:09:CREFL')
+	band_info = dl.metadata.bands(products='modis:09:v2')
 	
 	sName = country
 	cName = 'growing_region'
@@ -136,25 +161,26 @@ for countryNum in range(len(countryList)+1):
 	eviClimo = np.zeros(shape=(nmonths,pixels,pixels))
 	ndwiClimo = np.zeros(shape=(nmonths,pixels,pixels))
 	climoCounter = np.zeros(shape=(nyears,nmonths,pixels,pixels))
-	plotYear = np.zeros(shape=(nyears+1,nmonths,140))
+	plotYear = np.zeros(shape=(nyears+1,nmonths,150))
 	monthAll = np.zeros(shape=(n_images))
-	ndviAll = -9999*np.ones(shape=(140,pixels,pixels))
-	eviAll = -9999*np.ones(shape=(140,pixels,pixels))
-	Mask = np.ones(shape=(140,pixels,pixels)) 
-	ndwiAll = np.zeros(shape=(140,pixels,pixels))
+	ndviAll = -9999*np.ones(shape=(150,pixels,pixels))
+	eviAll = -9999*np.ones(shape=(150,pixels,pixels))
+	Mask = np.ones(shape=(150,pixels,pixels)) 
+	ndwiAll = np.zeros(shape=(150,pixels,pixels))
 	####################
 	nGoodImage=-1
 	d=-1
 
 	for nImage in range(n_images):
 	
-		monthAll[nImage]=str(images['features'][nImage]['id'][25:27])
+		monthAll[nImage]=str(images['features'][nImage]['id'][17:19])
 	
 		if monthAll[nImage]!=monthAll[nImage-1] and nImage!=0:
+			print sName
 			d=-1
 			for v in range(pixels):
 				for h in range(pixels):
-					for d in range(140):
+					for d in range(150):
 						if Mask[d,v,h]==0:
 							ndviMonthAvg[y,m,v,h]+=ndviAll[d,v,h]
 							eviMonthAvg[y,m,v,h]+=eviAll[d,v,h]
@@ -164,21 +190,21 @@ for countryNum in range(len(countryList)+1):
 					eviClimo[m,v,h]+=eviMonthAvg[y,m,v,h]
 					ndwiClimo[m,v,h]+=ndwiMonthAvg[y,m,v,h]
 	
-			if not os.path.exists(wdvars+country+'/since2018'):
-				os.makedirs(wdvars+country+'/since2018')		 
-			np.save(wdvars+country+'/since2018/ndviClimoUnprocessed',ndviClimo)
-			np.save(wdvars+country+'/since2018/eviClimoUnprocessed',eviClimo)
-			np.save(wdvars+country+'/since2018/ndwiClimoUnprocessed',ndwiClimo)
-			np.save(wdvars+country+'/since2018/climoCounterUnprocessed',climoCounter)
-			np.save(wdvars+country+'/since2018/ndviMonthAvgUnprocessed',ndviMonthAvg)
-			np.save(wdvars+country+'/since2018/eviMonthAvgUnprocessed',eviMonthAvg) 
-			np.save(wdvars+country+'/since2018/ndwiMonthAvgUnprocessed',ndwiMonthAvg)
+			if not os.path.exists(wdvars+sName+'/since2018'):
+				os.makedirs(wdvars+sName+'/since2018')		 
+			np.save(wdvars+sName+'/since2018/ndviClimoUnprocessed',ndviClimo)
+			np.save(wdvars+sName+'/since2018/eviClimoUnprocessed',eviClimo)
+			np.save(wdvars+sName+'/since2018/ndwiClimoUnprocessed',ndwiClimo)
+			np.save(wdvars+sName+'/since2018/climoCounterUnprocessed',climoCounter)
+			np.save(wdvars+sName+'/since2018/ndviMonthAvgUnprocessed',ndviMonthAvg)
+			np.save(wdvars+sName+'/since2018/eviMonthAvgUnprocessed',eviMonthAvg) 
+			np.save(wdvars+sName+'/since2018/ndwiMonthAvgUnprocessed',ndwiMonthAvg)
 	
 			d=-1
-			ndviAll=-9999*np.ones(shape=(140,pixels,pixels))
-			eviAll=-9999*np.ones(shape=(140,pixels,pixels))
-			Mask=np.ones(shape=(140,pixels,pixels)) 
-			ndwiAll=np.zeros(shape=(140,pixels,pixels))
+			ndviAll=-9999*np.ones(shape=(150,pixels,pixels))
+			eviAll=-9999*np.ones(shape=(150,pixels,pixels))
+			Mask=np.ones(shape=(150,pixels,pixels)) 
+			ndwiAll=np.zeros(shape=(150,pixels,pixels))
 	
 	
 		# get the scene id
@@ -193,7 +219,7 @@ for countryNum in range(len(countryList)+1):
 			band_info_index[band_info[i]['name']]=i
 	
 		try:
-			default_range= band_info[band_info_index['ndvi']]['default_range']
+			default_range = band_info[band_info_index['ndvi']]['default_range']
 			physical_range = band_info[band_info_index['ndvi']]['physical_range']
 			arrNDVI, meta = dl.raster.ndarray(
 				scene,
@@ -256,7 +282,8 @@ for countryNum in range(len(countryList)+1):
 		# time
 		############################################### 
 	
-		xtime=str(images['features'][nImage]['id'][20:30]) # old MODIS
+		#xtime=str(images['features'][nImage]['id'][20:30]) # for CREFL
+		xtime=str(images['features'][nImage]['id'][12:22]) # for v2
 		date=xtime
 		year=int(xtime[0:4])
 		if nGoodImage==0:
@@ -276,8 +303,6 @@ for countryNum in range(len(countryList)+1):
 	
 		print date, nGoodImage, np.round(np.sum(cloudMask)/(pixels*pixels),3), d, np.round(time2-time1,1)
 		sys.stdout.flush()
-		#cloudMask = arrCloud[:, :, 0] != 0 
-		#cloudMask = arrCloud[:, :, 1] == 0 #for desert
 	
 		time1=time.time()
 	
@@ -326,9 +351,9 @@ for countryNum in range(len(countryList)+1):
 				resolution=dltile['properties']['resolution'],
 				bounds=dltile['properties']['outputBounds'],
 				srs=dltile['properties']['cs_code'],
-				bands=['evi', 'alpha'],
-				#scales=[[default_range[0], default_range[1], physical_range[0], physical_range[1]]],
-				scales=[[0,2**16,-1.,1.]],
+				bands=['derived:evi', 'alpha'],
+				scales=[[0,65535,-1.,1.]], # from Rick
+				#scales=[[0,2**16,-1.,1.]],
 				#scales=[[0,16383,-1.0,1.0]],
 				data_type='Float32',
 				)
@@ -442,7 +467,7 @@ for countryNum in range(len(countryList)+1):
 	
 	for v in range(pixels):
 		for h in range(pixels):
-			for d in range(140):
+			for d in range(150):
 				if Mask[d,v,h]==0:
 					ndviMonthAvg[y,m,v,h] += ndviAll[d,v,h]
 					eviMonthAvg[y,m,v,h] += eviAll[d,v,h]
@@ -452,13 +477,13 @@ for countryNum in range(len(countryList)+1):
 			eviClimo[m,v,h] += eviMonthAvg[y,m,v,h]
 			ndwiClimo[m,v,h] += ndwiMonthAvg[y,m,v,h]
 	
-	np.save(wdvars+country+'/since2018/ndviClimoUnprocessed',ndviClimo)
-	np.save(wdvars+country+'/since2018/eviClimoUnprocessed',eviClimo)
-	np.save(wdvars+country+'/since2018/ndwiClimoUnprocessed',ndwiClimo)
-	np.save(wdvars+country+'/since2018/climoCounterUnprocessed',climoCounter)
-	np.save(wdvars+country+'/since2018/ndviMonthAvgUnprocessed',ndviMonthAvg)
-	np.save(wdvars+country+'/since2018/eviMonthAvgUnprocessed',eviMonthAvg) 
-	np.save(wdvars+country+'/since2018/ndwiMonthAvgUnprocessed',ndwiMonthAvg)
+	np.save(wdvars+sName+'/since2018/ndviClimoUnprocessed',ndviClimo)
+	np.save(wdvars+sName+'/since2018/eviClimoUnprocessed',eviClimo)
+	np.save(wdvars+sName+'/since2018/ndwiClimoUnprocessed',ndwiClimo)
+	np.save(wdvars+sName+'/since2018/climoCounterUnprocessed',climoCounter)
+	np.save(wdvars+sName+'/since2018/ndviMonthAvgUnprocessed',ndviMonthAvg)
+	np.save(wdvars+sName+'/since2018/eviMonthAvgUnprocessed',eviMonthAvg) 
+	np.save(wdvars+sName+'/since2018/ndwiMonthAvgUnprocessed',ndwiMonthAvg)
 
 
 

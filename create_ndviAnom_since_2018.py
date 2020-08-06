@@ -64,16 +64,17 @@ since2018 = True
 startMonth=0
 endMonth=12
 nmonths=12
-nyears=2
+nyears=3
 
-makePlots=False
+makePlots=True
 
 monthName=['January','Febuary','March','April','May','June','July','August','September','October','November','December']
 
+#countryNumsToRun = np.array([2,3,4,5,6,13,22,24,25,26,27,28,30,31,32,33,34,35,36,37,38,39,40,41,42,43,45])
+countryNumsToRun = np.array([27])
+
 for icountry in range(47):
-	if icountry==0:
-		continue
-	if icountry!=1: continue # Ethiopia
+	if np.sum(countryNumsToRun==icountry)==0: continue 
 
 	Good=False
 
@@ -97,7 +98,6 @@ for icountry in range(47):
 	print sName
 	###############################################
 
-	'''
 	########### load vars ###########
 	climoCounterAll = np.load(wdvars+sName+'/since2018/climoCounterUnprocessed.npy')
 	ndviMonthAvgU = np.load(wdvars+sName+'/since2018/ndviMonthAvgUnprocessed.npy')
@@ -105,10 +105,6 @@ for icountry in range(47):
 	ndwiMonthAvgU = np.load(wdvars+sName+'/since2018/ndwiMonthAvgUnprocessed.npy')
 	npixels = climoCounterAll.shape[-1]
 	######################################
-	'''
-	ndviMonthAvg = np.load(wdvars+sName+'/ndviMonthAvg.npy')[:5]
-	eviMonthAvg = np.load(wdvars+sName+'/eviMonthAvg.npy')[:5]
-	ndwiMonthAvg = np.load(wdvars+sName+'/ndwiMonthAvg.npy')[:5]
 
 	########### Load Monthly Climatologies ###########
 	ndviClimo = np.load(wdvars+sName+'/ndviClimo.npy')
@@ -117,14 +113,10 @@ for icountry in range(47):
 	##################################################
 
 	########### Compute Pixel-wise Averages and Anomalies ###########
-	'''
 	ndviMonthAvg = np.nan_to_num(ndviMonthAvgU/climoCounterAll)
 	eviMonthAvg = np.nan_to_num(eviMonthAvgU/climoCounterAll)
 	ndwiMonthAvg = np.nan_to_num(ndwiMonthAvgU/climoCounterAll)
-	'''
 
-	ndviMonthAvg = np.nan_to_num(ndviMonthAvg)
-	
 	ndviMonthAvg = np.ma.masked_array(ndviMonthAvg,ndviMonthAvg==0)
 	eviMonthAvg = np.ma.masked_array(eviMonthAvg,eviMonthAvg==0)
 	ndwiMonthAvg = np.ma.masked_array(ndwiMonthAvg,ndwiMonthAvg==0)
@@ -133,21 +125,54 @@ for icountry in range(47):
 	eviAnomAllPix = np.nan_to_num(eviMonthAvg - eviClimo)
 	ndwiAnomAllPix = np.nan_to_num(ndwiMonthAvg - ndwiClimo)
 	#################################################################
+	if makePlots:
+		plt.clf()
+		plt.imshow(ndviAnomAllPix[-1,4,:,:],cmap=my_cmap_gwb,vmin=-0.3,vmax=0.3)
+		plt.title(sName+' NDVI Anomaly, May 2020',fontsize=16)
+		plt.xticks([])
+		plt.yticks([])
+		plt.colorbar()
+		plt.savefig(wdfigs+sName+'/2020/pixel_wise_NDVI.pdf')
+		
+		plt.clf()
+		plt.imshow(ndviAnomAllPix[-1,5,:,:],cmap=my_cmap_gwb,vmin=-0.3,vmax=0.3)
+		plt.title(sName+' NDVI Anomaly, May 2020',fontsize=16)
+		plt.xticks([])
+		plt.yticks([])
+		plt.colorbar()
+		plt.savefig(wdfigs+sName+'/2020/pixel_wise_NDVI_june.pdf')
+		exit()
+		
+		plt.clf()
+		plt.imshow(ndviClimo[4,:,:],cmap=my_cmap,vmin=0.1,vmax=0.8)
+		plt.title(sName+' NDVI May Climatology',fontsize=16)
+		plt.xticks([])
+		plt.yticks([])
+		plt.colorbar()
+		plt.savefig(wdfigs+sName+'/2020/pixel_wise_NDVI_may_climatology.pdf')
+		
+		plt.clf()
+		plt.imshow(ndviMonthAvg[-1,4,:,:],cmap=my_cmap,vmin=0.1,vmax=0.8)
+		plt.title(sName+' NDVI Avg, May 2020',fontsize=16)
+		plt.xticks([])
+		plt.yticks([])
+		plt.colorbar()
+		plt.savefig(wdfigs+sName+'/2020/pixel_wise_NDVI_may_avg.pdf')
+	exit()
 
 	########### Compute Composite Anomalies and Avgs ###########
-	exit()
-	ndviAnomCurrent = np.ma.mean(np.ma.mean(ndviAnomAllPix,axis=2),axis=2)
-	eviAnomCurrent = np.ma.mean(np.ma.mean(eviAnomAllPix,axis=2),axis=2)
-	ndwiAnomCurrent = np.ma.mean(np.ma.mean(ndwiAnomAllPix,axis=2),axis=2)
+	xlen = ndviClimo.shape[-1]
 
-	#ndviAvgCurrent = np.ma.mean(np.ma.mean(ndviMonthAvg,axis=2),axis=2)
-	#eviAvgCurrent = np.ma.mean(np.ma.mean(eviMonthAvg,axis=2),axis=2)
-	#ndwiAvgCurrent = np.ma.mean(np.ma.mean(ndwiMonthAvg,axis=2),axis=2)
+	ndviAvgCurrent = np.ma.mean(np.ma.reshape(ndviMonthAvg, [nyears,12,xlen**2]),axis=2)
+	eviAvgCurrent = np.ma.mean(np.ma.reshape(eviMonthAvg, [nyears,12,xlen**2]),axis=2)
+	ndwiAvgCurrent = np.ma.mean(np.ma.reshape(ndwiMonthAvg, [nyears,12,xlen**2]),axis=2)
 
-	ndviAvg = np.ma.mean(np.ma.reshape(ndviMonthAvg, [5,12,2048**2]),axis=2)
+	ndviAnomCurrent = np.ma.mean(np.ma.reshape(ndviAnomAllPix, [nyears,12,xlen**2]),axis=2)
+	eviAnomCurrent = np.ma.mean(np.ma.reshape(eviAnomAllPix, [nyears,12,xlen**2]),axis=2)
+	ndwiAnomCurrent = np.ma.mean(np.ma.reshape(ndwiAnomAllPix, [nyears,12,xlen**2]),axis=2)
 
-	print ndviAnomCurrent[:],'\n'
-	print ndviAvgCurrent[:]
+	#print ndviAnomCurrent[:],'\n'
+	#print ndviAvgCurrent[:]
 	
 	np.save(wdvars+sName+'/since2018/ndviAnom',np.array(ndviAnomCurrent))
 	np.save(wdvars+sName+'/since2018/eviAnom',np.array(eviAnomCurrent))
@@ -159,20 +184,20 @@ for icountry in range(47):
 	############################################################
 	
 	########### Make One Array for 2013-2020 ###########
-	ndviAvg2013to17 = np.load(wdvars+sName+'/ndviAvg.npy')[0]
-	eviAvg2013to17 = np.load(wdvars+sName+'/eviAvg.npy')[0]
-	ndwiAvg2013to17 = np.load(wdvars+sName+'/ndwiAvg.npy')[0]
+	ndviAvg2013to17 = np.load(wdvars+sName+'/ndviAvg.npy')
+	#eviAvg2013to17 = np.load(wdvars+sName+'/eviAvg.npy')
+	ndwiAvg2013to17 = np.load(wdvars+sName+'/ndwiAvg.npy')
 
-	ndviAnom2013to17 = np.load(wdvars+sName+'/ndviAnom.npy')[0]
-	eviAnom2013to17 = np.load(wdvars+sName+'/eviAnom.npy')[0]
-	ndwiAnom2013to17 = np.load(wdvars+sName+'/ndwiAnom.npy')[0]
+	ndviAnom2013to17 = np.load(wdvars+sName+'/ndviAnom.npy')
+	#eviAnom2013to17 = np.load(wdvars+sName+'/eviAnom.npy')
+	ndwiAnom2013to17 = np.load(wdvars+sName+'/ndwiAnom.npy')
 
 	ndviAvgAllYears = np.zeros(shape=(8,12))
-	eviAvgAllYears = np.zeros(shape=(8,12))
+	#eviAvgAllYears = np.zeros(shape=(8,12))
 	ndwiAvgAllYears = np.zeros(shape=(8,12))
 
 	ndviAnomAllYears = np.zeros(shape=(8,12))
-	eviAnomAllYears = np.zeros(shape=(8,12))
+	#eviAnomAllYears = np.zeros(shape=(8,12))
 	ndwiAnomAllYears = np.zeros(shape=(8,12))
 
 	ndviAvgAllYears[:5] = ndviAvg2013to17
@@ -180,10 +205,10 @@ for icountry in range(47):
 	ndviAnomAllYears[:5] = ndviAnom2013to17
 	ndviAnomAllYears[5:] = ndviAnomCurrent
 
-	eviAvgAllYears[:5] = eviAvg2013to17
-	eviAvgAllYears[5:] = eviAvgCurrent
-	eviAnomAllYears[:5] = eviAnom2013to17
-	eviAnomAllYears[5:] = eviAnomCurrent
+	#eviAvgAllYears[:5] = eviAvg2013to17
+	#eviAvgAllYears[5:] = eviAvgCurrent
+	#eviAnomAllYears[:5] = eviAnom2013to17
+	#eviAnomAllYears[5:] = eviAnomCurrent
 
 	ndwiAvgAllYears[:5] = ndwiAvg2013to17
 	ndwiAvgAllYears[5:] = ndwiAvgCurrent
@@ -194,15 +219,31 @@ for icountry in range(47):
 	if not os.path.exists(wdfigs+sName+'/2020'):
 		os.makedirs(wdfigs+sName+'/2020')
 
-variables = ['ndviAvgAllYears','eviAvgAllYears','ndwiAvgAllYears','ndviAnomAllYears','eviAnomAllYears','ndwiAnomAllYears']
-varNameShort = ['ndviAvg','eviAvg','ndwiAvg','ndviAnom','eviAnom','ndwiAnom']
-varNames = ['NDVI Avg','EVI Avg','NDWI Avg','NDVI Anom','EVI Anom','NDWI Anom']
-for ivar in range(len(variables)):
-	ydata = np.ma.compressed(np.ma.masked_array(vars()[variables[ivar]],vars()[variables[ivar]]==0))
-	plt.clf()
-	plt.plot(ydata, '*-b')
-	plt.grid(True)
-	plt.ylabel(varNames[ivar])
-	plt.title(sName + ' ' + varNames[ivar] + ', 2013-2020')
-	plt.savefig(wdfigs+sName+'/2020/'+sName+'_'+varNameShort[ivar]+'_2013-2020.pdf')
-	exit()
+	xtime=np.zeros(shape=(8,12))
+	for y in range(8):
+		for m in range(12):
+			xtime[y,m]=(y+2013)+(m+.5)/12
+	xtime = np.ma.compressed(np.ma.masked_array(xtime,ndviAvgAllYears==0))
+
+	#variables = ['ndviAvgAllYears','eviAvgAllYears','ndwiAvgAllYears','ndviAnomAllYears','eviAnomAllYears','ndwiAnomAllYears']
+	variables = ['ndviAvgAllYears','ndwiAvgAllYears','ndviAnomAllYears','ndwiAnomAllYears']
+	#varNameShort = ['ndviAvg','eviAvg','ndwiAvg','ndviAnom','eviAnom','ndwiAnom']
+	varNameShort = ['ndviAvg','ndwiAvg','ndviAnom','ndwiAnom']
+	#varNames = ['NDVI Avg','EVI Avg','NDWI Avg','NDVI Anom','EVI Anom','NDWI Anom']
+	varNames = ['NDVI Avg','NDWI Avg','NDVI Anom','NDWI Anom']
+	for ivar in range(len(variables)):
+		ydata = np.ma.compressed(np.ma.masked_array(vars()[variables[ivar]],vars()[variables[ivar]]==0))
+		plt.clf()
+		plt.plot(xtime, ydata, '*-b')
+		plt.grid(True)
+		plt.ylabel(varNames[ivar])
+		plt.title(sName + ' ' + varNames[ivar] + ', 2013-2020')
+		plt.savefig(wdfigs+sName+'/2020/'+sName+'_'+varNameShort[ivar]+'_2013-2020.pdf')
+
+	np.save(wdvars+sName+'/ndviAnomAllYears',np.array(ndviAnomAllYears))
+	#np.save(wdvars+sName+'/eviAnomAllYears',np.array(eviAnomAllYears))
+	np.save(wdvars+sName+'/ndwiAnomAllYears',np.array(ndwiAnomAllYears))
+		
+	np.save(wdvars+sName+'/ndviAvgAllYears',np.array(ndviAvgAllYears))
+	#np.save(wdvars+sName+'/eviAvgAllYears',np.array(eviAvgAllYears))
+	np.save(wdvars+sName+'/ndwiAvgAllYears',np.array(ndwiAvgAllYears))
